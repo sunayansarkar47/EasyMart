@@ -58,14 +58,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-  /* ---------------- Home Page Script ---------------- */
-document.addEventListener("DOMContentLoaded", function(){
+    /* ================= LOGOUT ================= */
 
-    // Logout button
     const logoutBtn = document.getElementById("logoutBtn");
-    if(logoutBtn){
-        logoutBtn.addEventListener("click", function(){
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", function () {
+            localStorage.removeItem("easymartUser");
             window.location.href = "login.html";
+        });
+    }
+
+});
+/* ========== INDEX AUTO REDIRECT ========== */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const splash = document.querySelector(".splash");
+
+    if (splash) {
+        splash.addEventListener("animationend", function () {
+            window.location.href = "landing.html";
         });
     }
 

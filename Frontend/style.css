@@ -569,7 +569,7 @@ header nav a:hover {
 
 /* Reset */
 /* Home CSS*/
-/* ---------------- Home Page Styles ---------------- */
+/* ---------------- Home Page Styles ---------------- 
 .navbar {
     display:flex;
     justify-content:space-between;
@@ -652,3 +652,4 @@ footer {
     background:#2c3e50;
     color:white;
 }
+    */

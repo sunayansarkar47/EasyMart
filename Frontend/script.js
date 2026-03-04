@@ -1,3 +1,7 @@
+// 3 seconds পর Home page এ redirect করবে
+setTimeout(function () {
+    window.location.href = "landing.html";
+}, 3000);
 document.addEventListener("DOMContentLoaded", function () {
 
     /* ================= LOGIN ================= */

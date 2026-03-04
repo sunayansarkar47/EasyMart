@@ -542,3 +542,26 @@ header nav a:hover {
         padding: 50px 30px;
     }
 }
+
+.role-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.role-btn {
+    text-decoration: none;
+    text-align: center;
+    padding: 15px;
+    background-color: #27ae60;
+    color: white;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: 0.3s;
+}
+
+.role-btn:hover {
+    background-color: #34495e;
+    transform: scale(1.05);
+}

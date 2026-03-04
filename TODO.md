@@ -2,8 +2,8 @@
 
 ## 🔹 High Priority
 
-- [ ] Add About page
-- [ ] Add Contact page
+- [x] Add About page
+- [-] Add Contact page
 - [ ] Improve navigation bar design
 - [ ] Make website fully responsive
 - [ ] Organize JavaScript into functions

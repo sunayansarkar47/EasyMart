@@ -58,13 +58,13 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    /* ================= LOGOUT ================= */
+  /* ---------------- Home Page Script ---------------- */
+document.addEventListener("DOMContentLoaded", function(){
 
+    // Logout button
     const logoutBtn = document.getElementById("logoutBtn");
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", function () {
-            localStorage.removeItem("easymartUser");
+    if(logoutBtn){
+        logoutBtn.addEventListener("click", function(){
             window.location.href = "login.html";
         });
     }

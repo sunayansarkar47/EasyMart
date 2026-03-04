@@ -565,3 +565,90 @@ header nav a:hover {
     background-color: #34495e;
     transform: scale(1.05);
 }
+
+
+/* Reset */
+/* Home CSS*/
+/* ---------------- Home Page Styles ---------------- */
+.navbar {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 40px;
+    background:#2c3e50;
+    color:white;
+}
+
+.navbar h2 {
+    margin:0;
+}
+
+.navbar button {
+    padding:8px 15px;
+    border:none;
+    background:#e74c3c;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+.hero {
+    text-align:center;
+    padding:50px 20px;
+    background:white;
+}
+
+.hero h1 {
+    margin-bottom:10px;
+}
+
+.hero p {
+    color:gray;
+}
+
+.dashboard {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+    gap:25px;
+    padding:40px;
+}
+
+.card {
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.08);
+    text-align:center;
+    transition:0.3s;
+}
+
+.card:hover {
+    transform:translateY(-8px);
+}
+
+.card i {
+    font-size:35px;
+    margin-bottom:15px;
+    color:#2c3e50;
+}
+
+.card h3 {
+    margin:10px 0;
+}
+
+.card button {
+    margin-top:10px;
+    padding:8px 15px;
+    border:none;
+    background:#2c3e50;
+    color:white;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+footer {
+    text-align:center;
+    padding:20px;
+    background:#2c3e50;
+    color:white;
+}

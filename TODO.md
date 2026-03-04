@@ -1,46 +1,34 @@
-# ✅ EasyMart - Project TODO List
+## 🔹 Starting part
 
-## 🔹 High Priority
+- [x] Planing and design
+- [x] Add index or splash screen with animation
+- [x] Add landing page
+- [x] Work on login/Registration baton
+- [x] Add login page
+- [x] Add create account option
+- [x] varyfy Customer or shopkeeper
+- [x] Asking for login after registration
+- [x] Add database
+- [-] Home page create
 
-- [x] Add About page
-- [-] Add Contact page
-- [ ] Improve navigation bar design
-- [ ] Make website fully responsive
-- [ ] Organize JavaScript into functions
+## 🔹 Shopkeeper part
 
----
+- [x] Shopkeeper registration page
+- [-] Dashboard create
+- [ ] Customer and shopkeeper edit profile option
+- [ ] Product and price entry by shopkeeper
+- [ ] Quantity update of a Particular product
+- [ ] Calculate profit and loss
+- [ ] Payment method select
 
-## 🔹 Medium Priority
 
-- [ ] Add product cards with images
-- [ ] Add "Add to Cart" button
-- [ ] Create simple cart page
-- [ ] Add basic form validation
-- [ ] Improve footer section
 
----
+## 🔹 Customer part
 
-## 🔹 Low Priority
-
-- [ ] Add animations and transitions
-- [ ] Improve UI styling
-- [ ] Add favicon
-- [ ] Optimize images
-- [ ] Refactor CSS for better structure
-
----
-
-## 🔹 Future Features (Advanced)
-
-- [ ] User login & registration
-- [ ] Admin dashboard
-- [ ] Backend integration (Node.js / PHP)
-- [ ] Database connection
-- [ ] Payment gateway integration
+- [x] Customer registration page
+- [-] Dashboard create
+- [ ] Searching local Shop
+- [ ] Order placement
+- [ ] Price comparison
+- [ ] Product suggestion by AI
 - [ ] Product search functionality
-
----
-
-## 🎯 Long-Term Goal
-
-Transform EasyMart into a fully functional e-commerce platform.

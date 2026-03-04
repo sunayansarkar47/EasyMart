@@ -1,4 +1,4 @@
-// 3 seconds পর Home page এ redirect করবে
+//Home page animation
 setTimeout(function () {
     window.location.href = "landing.html";
 }, 3000);

@@ -9,6 +9,7 @@
 - [x] varyfy Customer or shopkeeper
 - [x] Asking for login after registration
 - [x] Add database
+- [x] Branch create
 - [-] Home page create
 
 ## 🔹 Shopkeeper part

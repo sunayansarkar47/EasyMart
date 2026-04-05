@@ -6,7 +6,7 @@
 - [x] Work on login/Registration baton
 - [x] Add login page
 - [x] Add create account option
-- [x] varyfy Customer or shopkeeper
+- [x] verify Customer or shopkeeper
 - [x] Asking for login after registration
 - [x] Add database
 - [-] Home page create
@@ -15,12 +15,16 @@
 
 - [x] Shopkeeper registration page
 - [-] Dashboard create
-- [ ] Customer and shopkeeper edit profile option
+- [ ] Shopkeeper edit profile option
 - [ ] Product and price entry by shopkeeper
 - [ ] Quantity update of a Particular product
 - [ ] Calculate profit and loss
 - [ ] Payment method select
-
+- [ ] Handling the orders
+- [ ] Overall summary at the end of the month
+- [ ] Home delivery
+- [ ] Calling Service
+- [ ] Shop rating system
 
 
 ## 🔹 Customer part
@@ -32,3 +36,20 @@
 - [ ] Price comparison
 - [ ] Product suggestion by AI
 - [ ] Product search functionality
+- [ ] Payment method
+- [ ] product Suggestion
+- [ ] Customer edit profile
+- [ ] Direct calling feature
+- [ ] Earning coins per order
+- [ ] AI comparison.
+
+
+## 🔹 Database
+
+- [x] Customer and shopkeeper registration table
+- [ ] Products Table
+- [ ] Orders Table
+- [ ] Order Details Table
+- [ ] Categories Table
+- [ ] Reviews Table
+- [ ] Items sold and required table 

@@ -6,17 +6,23 @@
 - [x] Work on login/Registration baton
 - [x] Add login page
 - [x] Add create account option
-- [x] varyfy Customer or shopkeeper
+- [x] verify Customer or shopkeeper
 - [x] Asking for login after registration
 - [x] Add database
 - [x] Branch create
 - [-] Home page create
 
 ## 🔹 Shopkeeper part
-- [ ] Overall summary at the end of the month
-- [ ] Home delivery
-- [ ] Calling Service
-- [ ] Shop rating system
+
+- [x] Shopkeeper registration page
+- [-] Dashboard create
+- [ ] Customer and shopkeeper edit profile option
+- [ ] Product and price entry by shopkeeper
+- [ ] Quantity update of a Particular product
+- [ ] Calculate profit and loss
+- [ ] Payment method select
+
+
 
 ## 🔹 Customer part
 

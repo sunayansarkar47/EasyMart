@@ -3,62 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <title>EasyMart - Home</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="home.css">
 </head>
 <body>
 
-    <!-- Navbar -->
-    <div class="navbar">
-        <h2>EasyMart Dashboard</h2>
+<!-- Header -->
+<header class="header">
+    <div class="logo">EasyMart</div>
+    <nav class="nav">
+        <a href="#">Home</a>
+        <a href="#">Shop</a>
+        <a href="#">Category</a>
+        <a href="#">Blog</a>
+    </nav>
+    <div class="user-actions">
+        <span id="username">User</span>
         <button id="logoutBtn">Logout</button>
     </div>
+</header>
 
-    <!-- Hero Section -->
-    <div class="hero">
-        <h1>Welcome to EasyMart</h1>
-        <p>Manage your shopping or business operations easily.</p>
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-text">
+        <h1>Don't Miss Out on Tasty Grocery Deals!</h1>
+        <p>Save up to 50% off on your first buy</p>
+        <button class="btn">Shop Now</button>
     </div>
-
-    <!-- Dashboard Section -->
-    <div class="dashboard">
-
-        <!-- Customer Features -->
-        <div class="card">
-            <i class="fa-solid fa-cart-shopping"></i>
-            <h3>Browse Products</h3>
-            <p>Explore items from nearby shops.</p>
-            <button>View</button>
-        </div>
-
-        <div class="card">
-            <i class="fa-solid fa-box"></i>
-            <h3>My Orders</h3>
-            <p>Track your recent purchases.</p>
-            <button>View</button>
-        </div>
-
-        <!-- Shopkeeper Features -->
-        <div class="card">
-            <i class="fa-solid fa-store"></i>
-            <h3>Manage Shop</h3>
-            <p>Update your shop details.</p>
-            <button>Manage</button>
-        </div>
-
-        <div class="card">
-            <i class="fa-solid fa-chart-line"></i>
-            <h3>Sales Analytics</h3>
-            <p>Monitor your shop performance.</p>
-            <button>View</button>
-        </div>
-
+    <div class="hero-image">
+        <img src="LoginPic.png" alt="Fresh groceries">
     </div>
+</section>
 
-    <footer>
-        © 2026 EasyMart. All rights reserved.
-    </footer>
+<!-- Categories -->
+<section class="categories">
+    <h2>Shop By Category</h2>
+    <div class="category-cards">
+        <div class="category-card">Vegetable</div>
+        <div class="category-card">Seafood</div>
+        <div class="category-card">Eggs</div>
+        <div class="category-card">Baking</div>
+        <div class="category-card">Cheese</div>
+        <div class="category-card">Fresh Fruit</div>
+        <div class="category-card">Meat</div>
+        <div class="category-card">Milk</div>
+        <div class="category-card">Drinks</div>
+    </div>
+</section>
 
-    <script src="script.js"></script>
+<!-- Featured Products -->
+<section class="products">
+    <h2>Farm Fresh Products</h2>
+    <div class="product-grid">
+        <div class="product-card">
+            <img src="vegetable.png" alt="">
+            <h3>Red Capsicum</h3>
+            <p>$20.00</p>
+        </div>
+        <div class="product-card">
+            <img src="fish.png" alt="">
+            <h3>Fresh Seafood</h3>
+            <p>$20.00</p>
+        </div>
+        <div class="product-card">
+            <img src="orange.png" alt="">
+            <h3>Orange</h3>
+            <p>$20.00</p>
+        </div>
+        <div class="product-card">
+            <img src="meat.png" alt="">
+            <h3>Raw Meat</h3>
+            <p>$20.00</p>
+        </div>
+    </div>
+</section>
+
+<script src="home.js"></script>
 </body>
 </html>

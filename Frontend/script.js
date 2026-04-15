@@ -88,4 +88,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-//Home page js
+//Dashboard page js

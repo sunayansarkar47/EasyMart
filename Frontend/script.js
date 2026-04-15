@@ -8,65 +8,41 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /* ================= LOGIN ================= */
 
-    const loginForm = document.getElementById("loginForm");
+/* ================= LOGIN (FIXED) ================= */
 
-    if (loginForm) {
-        loginForm.addEventListener("submit", function (e) {
-            e.preventDefault();
+const loginForm = document.getElementById("loginForm");
 
-            const username = loginForm.querySelector("input[type='text']").value.trim();
-            const password = loginForm.querySelector("input[type='password']").value.trim();
+if (loginForm) {
+    loginForm.addEventListener("submit", function (e) {
+        e.preventDefault();
 
-            if (username === "" || password === "") {
-                alert("Please fill in all fields.");
-                return;
-            }
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const shopId = document.getElementById("shopId").value.trim();
 
-            // Demo Login Credentials
-            if (username === "admin" && password === "1234") {
-
-                localStorage.setItem("easymartUser", username);
-
-                alert("Login successful!");
-                window.location.href = "landing.html";
-
-            } else {
-                alert("Invalid username or password.");
-            }
-        });
-    }
-    /* ================= PAGE PROTECTION ================= */
-document.getElementById("loginForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const shopId = document.getElementById("shopId").value.trim();
-
-    console.log(username, password, shopId); // debug
-
-    if (username === "" || password === "") {
-        alert("Please fill username and password");
-        return;
-    }
-
-    // LOGIN CHECK
-    if (username === "admin" && password === "1234") {
-
-        localStorage.setItem("easymartUser", username);
-
-        // ROUTING
-        if (shopId.length > 0) {
-            localStorage.setItem("shopId", shopId);
-            window.location.href = "shopkeeper.html";
-        } else {
-            window.location.href = "dashboard.html";
+        if (username === "" || password === "") {
+            alert("Please fill username and password");
+            return;
         }
 
-    } else {
-        alert("Invalid username or password");
-    }
-});
+        if (username === "admin" && password === "1234") {
+
+            localStorage.setItem("easymartUser", username);
+
+            if (shopId !== "") {
+                localStorage.setItem("shopId", shopId);
+                window.location.href = "shopkeeper.html";
+            } else {
+                window.location.href = "dashboard.html";
+            }
+
+        } else {
+            alert("Invalid username or password");
+        }
+    });
+}
+    /* ================= PAGE PROTECTION ================= */
+
     /* ================= PAGE PROTECTION ================= */
 
     const currentPage = window.location.pathname.split("/").pop();
@@ -91,15 +67,6 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
 
 
     /* ================= LOGOUT ================= */
-
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", function () {
-            localStorage.removeItem("easymartUser");
-            window.location.href = "login.html";
-        });
-    }
 
 });
 /* ========== INDEX AUTO REDIRECT ========== */
@@ -193,32 +160,42 @@ function render() {
 }
 
 // ===== ADD PRODUCT =====
-document.getElementById("addBtn").onclick = () => {
-  products.push({
-    name: "New Product",
-    price: 10,
-    cost: 5,
-    qty: 1,
-    img: "https://via.placeholder.com/150"
-  });
+const addBtn = document.getElementById("addBtn");
 
-  render();
-};
+if (addBtn) {
+    addBtn.onclick = () => {
+        products.push({
+            name: "New Product",
+            price: 10,
+            cost: 5,
+            qty: 1,
+            img: "https://via.placeholder.com/150"
+        });
+
+        render();
+    };
+}
 
 render();
 /* Logout */
-document.addEventListener("DOMContentLoaded", function () {
+function setupDashboardLogout() {
 
     const logoutBtn = document.getElementById("logoutBtn");
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", function (e) {
-            e.preventDefault(); // stop default link behavior
+    if (!logoutBtn) return;
 
-            localStorage.removeItem("easymartUser");
+    logoutBtn.addEventListener("click", function (e) {
+        e.preventDefault();
 
-            window.location.href = "login.html";
-        });
-    }
+        localStorage.removeItem("easymartUser");
+        localStorage.removeItem("shopId");
 
-});
+        window.location.href = "login.html";
+    });
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupDashboardLogout);
+} else {
+    setupDashboardLogout();
+}

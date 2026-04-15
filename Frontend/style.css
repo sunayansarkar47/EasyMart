@@ -1069,11 +1069,31 @@ img  { display: block; object-fit: contain; }
 /* TOPBAR */
 .topbar {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   align-items: center;
-  padding-left: 1340px;
+    padding-right: 250px;
+
 }
 
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+}
+
+#logoutBtn {
+  background: red;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+    padding-left: 10px;
+
+}
+
+#logoutBtn:hover {
+  background: darkred;
+}
 #addBtn {
   background: #2ecc71;
   color: white;

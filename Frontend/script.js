@@ -1,7 +1,9 @@
 //Home page animation
-setTimeout(function () {
-    window.location.href = "landing.html";
-}, 3000);
+if (window.location.pathname.endsWith("index.html")) {
+    setTimeout(() => {
+        window.location.href = "landing.html";
+    }, 3000);
+}
 document.addEventListener("DOMContentLoaded", function () {
 
     /* ================= LOGIN ================= */

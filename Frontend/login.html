@@ -25,14 +25,17 @@
 
                 <h2>Login to Your Account</h2>
 
-                    <form id="loginForm" action="Dashboard.html">
-                        <div class="input-group">
-                        <input type="text" required>
+                         <form id="loginForm">
+                            <div class="input-group">
+                      <input type="text" id="username" required>
                         <label>Email or Username</label>
                     </div>
-
                     <div class="input-group">
-                        <input type="password" required>
+                    <input type="text" id="shopId" placeholder=" ">
+                   <label>Shop ID (optional)</label>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="password" required>
                         <label>Password</label>
                     </div>
 
@@ -59,5 +62,6 @@
         </div>
 
     </div>
+    <script src="script.js"></script>
 </body>
 </html>

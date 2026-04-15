@@ -35,8 +35,38 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+    /* ================= PAGE PROTECTION ================= */
+document.getElementById("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
 
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const shopId = document.getElementById("shopId").value.trim();
 
+    console.log(username, password, shopId); // debug
+
+    if (username === "" || password === "") {
+        alert("Please fill username and password");
+        return;
+    }
+
+    // LOGIN CHECK
+    if (username === "admin" && password === "1234") {
+
+        localStorage.setItem("easymartUser", username);
+
+        // ROUTING
+        if (shopId.length > 0) {
+            localStorage.setItem("shopId", shopId);
+            window.location.href = "shopkeeper.html";
+        } else {
+            window.location.href = "dashboard.html";
+        }
+
+    } else {
+        alert("Invalid username or password");
+    }
+});
     /* ================= PAGE PROTECTION ================= */
 
     const currentPage = window.location.pathname.split("/").pop();

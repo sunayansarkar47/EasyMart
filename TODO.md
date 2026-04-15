@@ -14,18 +14,23 @@
 ## 🔹 Shopkeeper part
 
 - [x] Shopkeeper registration page
+- [-] Shopkeeper Dashboard 
 - [ ] Quantity update of a Particular product
+- [x] Specific login page 
+
 
 ## 🔹 Customer part
 
 - [x] Customer registration page
+- [-] Customer Dashboard 
 - [ ] Searching local Shop
 - [ ] Order placement
 - [ ] Price comparison
 
 ## 🔹 Database
 
-- [ ] Customer and shopkeeper registration table
+- [x] Connect mongoDB
+- [x] Create two separate part for customer and shopkeeper
 - [ ] Products Table
 
 ## 🔹 Manager’s responsibility

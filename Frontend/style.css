@@ -1069,8 +1069,9 @@ img  { display: block; object-fit: contain; }
 /* TOPBAR */
 .topbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  padding-left: 1340px;
 }
 
 #addBtn {

@@ -2,12 +2,12 @@
 - [ ] Floating advertisement
 
 ## 🔹 Shopkeeper part
-- [-] Dashboard create
+- [x] Dashboard create
 - [ ] Shopkeeper edit profile option
 - [ ] Product and price entry by shopkeeper
 
 ## 🔹 Customer part
-- [-] Dashboard create
+- [x] Dashboard create
 - [ ] Earning coins per order
 - [ ] Customer edit profile
 

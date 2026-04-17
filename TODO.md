@@ -1,5 +1,5 @@
 ## 🔹 Starting part
-- [ ] Floating advertisement
+- [-] Floating advertisement
 
 ## 🔹 Shopkeeper part
 - [-] Dashboard create

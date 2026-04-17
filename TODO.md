@@ -1,15 +1,14 @@
 ## 🔹 Starting part
-- [-] Floating advertisement
+- [X] Floating advertisement
 
 ## 🔹 Shopkeeper part
-- [-] Dashboard create
-- [ ] Shopkeeper edit profile option
+- [X] Shopkeeper edit profile option
 - [ ] Product and price entry by shopkeeper
 
 ## 🔹 Customer part
-- [-] Dashboard create
+- [X] Dashboard create
 - [ ] Earning coins per order
-- [ ] Customer edit profile
+- [X] Customer edit profile
 
 ## 🔹 Database
 - [-] Work with other members

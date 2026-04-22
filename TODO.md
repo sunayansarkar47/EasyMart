@@ -3,11 +3,11 @@
 
 ## 🔹 Shopkeeper part
 - [X] Shopkeeper edit profile option
-- [ ] Product and price entry by shopkeeper
+- [X] Product and price entry by shopkeeper
 
 ## 🔹 Customer part
 - [X] Dashboard create
-- [ ] Earning coins per order
+- [X] Earning coins per order
 - [X] Customer edit profile
 
 ## 🔹 Database

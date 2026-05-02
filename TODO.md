@@ -26,27 +26,6 @@
 - [ ] Searching local Shop
 - [ ] Order placement
 - [ ] Price comparison
-<<<<<<< HEAD
-- [ ] Product suggestion by AI
-- [ ] Product search functionality
-- [ ] Payment method
-- [ ] product Suggestion
-- [ ] Customer edit profile
-- [ ] Direct calling feature
-- [ ] Earning coins per order
-- [ ] AI comparison.
-
-
-## 🔹 Database
-
-- [x] Customer and shopkeeper registration table
-- [ ] Products Table
-- [ ] Orders Table
-- [ ] Order Details Table
-- [ ] Categories Table
-- [ ] Reviews Table
-- [ ] Items sold and required table 
-=======
 
 ## 🔹 Database
 
@@ -59,4 +38,3 @@
 - [-] Check and update the main branch
 - [-] Monitoring overall project
 - [-] Communicate with course teacher
->>>>>>> Sunayan-Manager

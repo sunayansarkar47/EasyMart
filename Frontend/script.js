@@ -31,9 +31,9 @@ if (loginForm) {
 
             if (shopId !== "") {
                 localStorage.setItem("shopId", shopId);
-                window.location.href = "shopkeeper.html";
+                window.location.href = "product-entry.html";
             } else {
-                window.location.href = "dashboard.html";
+                window.location.href = "home.html";
             }
 
         } else {

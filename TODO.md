@@ -14,26 +14,19 @@
 ## 🔹 Shopkeeper part
 
 - [x] Shopkeeper registration page
-- [-] Dashboard create
-- [ ] Shopkeeper edit profile option
-- [ ] Product and price entry by shopkeeper
+- [-] Shopkeeper Dashboard 
 - [ ] Quantity update of a Particular product
-- [ ] Calculate profit and loss
-- [ ] Payment method select
-- [ ] Handling the orders
-- [ ] Overall summary at the end of the month
-- [ ] Home delivery
-- [ ] Calling Service
-- [ ] Shop rating system
+- [x] Specific login page 
 
 
 ## 🔹 Customer part
 
 - [x] Customer registration page
-- [-] Dashboard create
+- [-] Customer Dashboard 
 - [ ] Searching local Shop
 - [ ] Order placement
 - [ ] Price comparison
+<<<<<<< HEAD
 - [ ] Product suggestion by AI
 - [ ] Product search functionality
 - [ ] Payment method
@@ -53,3 +46,17 @@
 - [ ] Categories Table
 - [ ] Reviews Table
 - [ ] Items sold and required table 
+=======
+
+## 🔹 Database
+
+- [x] Connect mongoDB
+- [x] Create two separate part for customer and shopkeeper
+- [ ] Products Table
+
+## 🔹 Manager’s responsibility
+- [-] Communicate with other member
+- [-] Check and update the main branch
+- [-] Monitoring overall project
+- [-] Communicate with course teacher
+>>>>>>> Sunayan-Manager

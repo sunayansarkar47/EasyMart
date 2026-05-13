@@ -9,29 +9,28 @@
 - [x] verify Customer or shopkeeper
 - [x] Asking for login after registration
 - [x] Add database
-- [-] Home page create
+- [x] Home page create
 
 ## 🔹 Shopkeeper part
 
 - [x] Shopkeeper registration page
-- [-] Shopkeeper Dashboard 
-- [ ] Quantity update of a Particular product
+- [x] Shopkeeper Dashboard 
+- [x] Quantity update of a Particular product
 - [x] Specific login page 
 
 
 ## 🔹 Customer part
 
 - [x] Customer registration page
-- [-] Customer Dashboard 
+- [x] Customer Dashboard 
 - [ ] Searching local Shop
-- [ ] Order placement
-- [ ] Price comparison
+- [x] Order placement
 
 ## 🔹 Database
 
 - [x] Connect mongoDB
 - [x] Create two separate part for customer and shopkeeper
-- [ ] Products Table
+- [x] Products Table
 
 ## 🔹 Manager’s responsibility
 - [-] Communicate with other member

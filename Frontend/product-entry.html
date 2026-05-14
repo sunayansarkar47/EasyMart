@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>EasyMart — Product Entry</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<header class="navbar">
+  <div class="navbar-logo">
+    <span class="logo-icon">🛒</span>
+    <span class="logo-text">Easy<span class="logo-accent">Mart</span></span>
+  </div>
+  <div class="navbar-search">
+    <i class="fa fa-search search-icon"></i>
+    <input type="text" placeholder="Search your grocery products etc..." id="globalSearch"/>
+  </div>
+  <div class="navbar-actions">
+    <button class="icon-btn"><i class="fa fa-filter"></i> Filter</button>
+    <button class="icon-btn icon-only"><i class="fa fa-bell"></i></button>
+    <div class="avatar" onclick="window.location.href='shopkeeper-profile.html'" style="cursor:pointer;"><img src="https://i.pravatar.cc/36?img=12" alt="User"/></div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item"><i class="fa fa-th-large"></i><span>Dashboard</span></a>
+      <a href="#" class="nav-item"><i class="fa fa-store"></i><span>My Shop</span></a>
+      <a href="#" class="nav-item active"><i class="fa fa-boxes"></i><span>Products</span></a>
+      <a href="#" class="nav-item"><i class="fa fa-shopping-bag"></i><span>Orders</span></a>
+      <a href="#" class="nav-item"><i class="fa fa-chart-bar"></i><span>Analytics</span></a>
+      <a href="#" class="nav-item"><i class="fa fa-coins"></i><span>Coins</span></a>
+      <a href="#" class="nav-item"><i class="fa fa-tags"></i><span>Discounts</span></a>
+      <a href="#" class="nav-item"><i class="fa fa-user-cog"></i><span>Profile</span></a>
+      <a href="#" class="nav-item"><i class="fa fa-cog"></i><span>Settings</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="login.html" class="nav-item logout"><i class="fa fa-sign-out-alt"></i><span>Log Out</span></a>
+    </div>
+  </aside>
+
+  <button class="hamburger" onclick="toggleSidebar()"><i class="fa fa-bars"></i></button>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Product Management</h1>
+        <p class="page-sub">Add, edit and manage your shop's product listings</p>
+      </div>
+      <button class="btn-add-product" onclick="openModal()">
+        <i class="fa fa-plus"></i> Add New Product
+      </button>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-row">
+      <div class="sum-card">
+        <div class="sum-icon" style="background:#e8f5e9;color:#388e3c;"><i class="fa fa-boxes"></i></div>
+        <div><div class="sum-num" id="totalProducts">0</div><div class="sum-lbl">Total Products</div></div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-icon" style="background:#e3f2fd;color:#1565c0;"><i class="fa fa-check-circle"></i></div>
+        <div><div class="sum-num" id="activeCount">0</div><div class="sum-lbl">Active</div></div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-icon" style="background:#fff3e0;color:#e65100;"><i class="fa fa-exclamation-triangle"></i></div>
+        <div><div class="sum-num" id="lowStockCount">0</div><div class="sum-lbl">Low Stock</div></div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-icon" style="background:#fce4ec;color:#c62828;"><i class="fa fa-times-circle"></i></div>
+        <div><div class="sum-num" id="outStockCount">0</div><div class="sum-lbl">Out of Stock</div></div>
+      </div>
+    </div>
+
+    <!-- FILTERS & SEARCH BAR -->
+    <div class="table-toolbar">
+      <div class="toolbar-left">
+        <div class="search-box">
+          <i class="fa fa-search"></i>
+          <input type="text" placeholder="Search products..." id="productSearch" oninput="filterProducts()"/>
+        </div>
+        <select class="filter-sel" id="catFilter" onchange="filterProducts()">
+          <option value="">All Categories</option>
+          <option>Fruits</option>
+          <option>Vegetables</option>
+          <option>Fish</option>
+          <option>Meat</option>
+          <option>Bread</option>
+          <option>Drinks</option>
+          <option>Sea Food</option>
+          <option>Ice Cream</option>
+          <option>Juice</option>
+          <option>Jam</option>
+        </select>
+        <select class="filter-sel" id="stockFilter" onchange="filterProducts()">
+          <option value="">All Stock</option>
+          <option>In Stock</option>
+          <option>Low Stock</option>
+          <option>Out of Stock</option>
+        </select>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="bulkDelete()" style="display:none">
+          <i class="fa fa-trash"></i> Delete Selected
+        </button>
+        <span class="product-count" id="productCountLabel"></span>
+      </div>
+    </div>
+
+    <!-- PRODUCT TABLE -->
+    <div class="table-wrap">
+      <table class="product-table" id="productTable">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"/></th>
+            <th>Product</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Discount</th>
+            <th>Final Price</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="productBody">
+          <!-- Rows injected by JS -->
+        </tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <div class="empty-icon">📦</div>
+        <h3>No products found</h3>
+        <p>Try adjusting your filters or add a new product.</p>
+        <button class="btn-add-product" onclick="openModal()"><i class="fa fa-plus"></i> Add Product</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- ADD / EDIT MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Add New Product</h3>
+      <button class="modal-close" onclick="closeModal()"><i class="fa fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Image Upload -->
+      <div class="form-group full">
+        <label>Product Image</label>
+        <label class="img-upload-box" for="prodImgInput" id="imgUploadLabel">
+          <img id="imgPreview" src="" alt="" style="display:none"/>
+          <div class="img-placeholder" id="imgPlaceholder">
+            <i class="fa fa-image"></i>
+            <span>Click to upload image</span>
+          </div>
+        </label>
+        <input type="file" id="prodImgInput" accept="image/*" style="display:none" onchange="previewProdImg(event)"/>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Product Name <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fa fa-tag"></i><input type="text" id="pName" placeholder="e.g. Fresh Strawberry"/></div>
+        </div>
+        <div class="form-group">
+          <label>Category <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fa fa-list"></i>
+            <select id="pCat">
+              <option value="">Select category</option>
+              <option>Fruits</option>
+              <option>Vegetables</option>
+              <option>Fish</option>
+              <option>Meat</option>
+              <option>Bread</option>
+              <option>Drinks</option>
+              <option>Sea Food</option>
+              <option>Ice Cream</option>
+              <option>Juice</option>
+              <option>Jam</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group full">
+        <label>Description</label>
+        <div class="input-wrap textarea-wrap"><i class="fa fa-align-left"></i><textarea id="pDesc" rows="2" placeholder="Short product description..."></textarea></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Unit <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fa fa-weight"></i>
+            <select id="pUnit">
+              <option>kg</option>
+              <option>piece</option>
+              <option>litre</option>
+              <option>gram</option>
+              <option>dozen</option>
+              <option>pack</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Stock Quantity <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fa fa-cubes"></i><input type="number" id="pStock" placeholder="0" min="0" oninput="updatePricePreview()"/></div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Price (৳) <span class="req">*</span></label>
+          <div class="input-wrap"><i class="fa fa-taka-sign"></i><input type="number" id="pPrice" placeholder="0.00" min="0" step="0.01" oninput="updatePricePreview()"/></div>
+        </div>
+        <div class="form-group">
+          <label>Discount (%)</label>
+          <div class="input-wrap"><i class="fa fa-percent"></i><input type="number" id="pDiscount" placeholder="0" min="0" max="100" oninput="updatePricePreview()"/></div>
+        </div>
+      </div>
+
+      <!-- LIVE PRICE PREVIEW -->
+      <div class="price-preview" id="pricePreview">
+        <div class="pp-row">
+          <span class="pp-label">Original Price</span>
+          <span class="pp-orig" id="ppOrig">৳0.00</span>
+        </div>
+        <div class="pp-row">
+          <span class="pp-label">Discount</span>
+          <span class="pp-disc" id="ppDisc">- ৳0.00</span>
+        </div>
+        <div class="pp-divider"></div>
+        <div class="pp-row">
+          <span class="pp-label final-lbl">Final Price</span>
+          <span class="pp-final" id="ppFinal">৳0.00</span>
+        </div>
+        <div class="pp-badge" id="ppBadge" style="display:none"></div>
+      </div>
+
+      <div class="form-group full">
+        <label>Status</label>
+        <div class="status-toggle-row">
+          <label class="toggle-switch"><input type="checkbox" id="pStatus" checked/><span class="slider-knob"></span></label>
+          <span id="statusLabel" style="font-size:13px;font-weight:700;color:var(--green)">Active</span>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()"><i class="fa fa-times"></i> Cancel</button>
+      <button class="btn-save" onclick="saveProduct()"><i class="fa fa-check"></i> <span id="saveBtnLabel">Add Product</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-backdrop" id="deleteBackdrop">
+  <div class="modal small-modal">
+    <div class="modal-header">
+      <h3>Delete Product</h3>
+      <button class="modal-close" onclick="closeDeleteModal()"><i class="fa fa-times"></i></button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:24px 20px;">
+      <div style="font-size:48px;margin-bottom:12px;">🗑️</div>
+      <p style="font-size:15px;font-weight:700;color:var(--text)">Are you sure you want to delete</p>
+      <p style="font-size:15px;font-weight:800;color:#e53935;margin:4px 0 16px;" id="deleteProductName">"Product Name"</p>
+      <p style="font-size:13px;color:var(--muted)">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn-delete-confirm" onclick="confirmDelete()"><i class="fa fa-trash"></i> Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#4caf50;--green-dark:#388e3c;--green-light:#e8f5e9;--green-mid:#c8e6c9;
+  --white:#fff;--bg:#f4f9f4;--text:#2c3e2d;--muted:#7a9b7c;--border:#e0eee0;
+  --shadow:0 2px 14px rgba(76,175,80,.10);--radius:14px;
+  --sidebar-w:200px;--header-h:60px;--font:'Nunito',sans-serif;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* NAVBAR */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--header-h);background:var(--white);display:flex;align-items:center;gap:14px;padding:0 16px;box-shadow:0 1px 8px rgba(0,0,0,.08)}
+.navbar-logo{display:flex;align-items:center;gap:6px;min-width:var(--sidebar-w)}
+.logo-icon{font-size:22px}.logo-text{font-size:20px;font-weight:800;color:var(--green-dark)}
+.logo-accent{color:var(--green)}
+.navbar-search{flex:1;display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:30px;padding:0 14px;height:38px}
+.navbar-search input{border:none;background:none;outline:none;width:100%;font-family:var(--font);font-size:14px}
+.search-icon{color:var(--muted);font-size:13px}
+.navbar-actions{display:flex;align-items:center;gap:10px}
+.icon-btn{display:flex;align-items:center;gap:6px;border:none;background:var(--green-light);color:var(--green-dark);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:600}
+.icon-btn.icon-only{padding:0;width:36px;height:36px;justify-content:center;border-radius:50%}
+.avatar img{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--green)}
+
+/* LAYOUT */
+.layout{display:flex;margin-top:var(--header-h);min-height:calc(100vh - var(--header-h))}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--white);padding:18px 10px;display:flex;flex-direction:column;justify-content:space-between;position:sticky;top:var(--header-h);height:calc(100vh - var(--header-h));overflow-y:auto;box-shadow:1px 0 8px rgba(0,0,0,.05);transition:transform .3s;z-index:90}
+.sidebar-nav{display:flex;flex-direction:column;gap:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;transition:background .2s,color .2s}
+.nav-item i{width:18px;text-align:center}
+.nav-item:hover{background:var(--green-light);color:var(--green-dark)}
+.nav-item.active{background:var(--green);color:var(--white)}
+.sidebar-bottom{border-top:1px solid var(--green-mid);padding-top:10px}
+.nav-item.logout{color:#e53935}
+.nav-item.logout:hover{background:#ffebee}
+
+/* MAIN */
+.main-content{flex:1;min-width:0;padding:24px 20px;display:flex;flex-direction:column;gap:20px}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.page-title{font-size:22px;font-weight:800}
+.page-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.btn-add-product{background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;border:none;border-radius:12px;padding:10px 20px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(76,175,80,.35);transition:transform .2s}
+.btn-add-product:hover{transform:translateY(-2px)}
+
+/* SUMMARY CARDS */
+.summary-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.sum-card{background:var(--white);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:14px}
+.sum-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sum-num{font-size:22px;font-weight:800}
+.sum-lbl{font-size:12px;color:var(--muted);font-weight:600}
+
+/* TOOLBAR */
+.table-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:var(--white);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.toolbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.toolbar-right{display:flex;align-items:center;gap:10px}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:0 12px;height:38px;min-width:200px}
+.search-box i{color:var(--muted);font-size:13px}
+.search-box input{border:none;background:none;outline:none;font-family:var(--font);font-size:14px;width:100%}
+.filter-sel{height:38px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font-family:var(--font);font-size:13px;background:var(--white);color:var(--text);cursor:pointer;outline:none}
+.product-count{font-size:13px;color:var(--muted);font-weight:600}
+.btn-bulk-delete{background:#ffebee;color:#e53935;border:1.5px solid #ffcdd2;border-radius:10px;padding:7px 14px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-bulk-delete:hover{background:#ffcdd2}
+
+/* TABLE */
+.table-wrap{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto}
+.product-table{width:100%;border-collapse:collapse;min-width:700px}
+.product-table thead th{background:var(--green-light);color:var(--green-dark);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:12px 14px;text-align:left;white-space:nowrap}
+.product-table thead th:first-child{border-radius:var(--radius) 0 0 0}
+.product-table thead th:last-child{border-radius:0 var(--radius) 0 0}
+.product-table tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+.product-table tbody tr:hover{background:var(--bg)}
+.product-table tbody tr:last-child{border-bottom:none}
+.product-table td{padding:12px 14px;font-size:14px;vertical-align:middle}
+
+/* TABLE CELLS */
+.prod-cell{display:flex;align-items:center;gap:10px}
+.prod-thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;background:var(--bg);flex-shrink:0}
+.prod-thumb-placeholder{width:44px;height:44px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.prod-name{font-weight:700;font-size:14px}
+.prod-desc{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.cat-tag{background:var(--green-light);color:var(--green-dark);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap}
+.price-orig{font-size:12px;color:var(--muted);text-decoration:line-through}
+.price-final{font-size:14px;font-weight:800;color:var(--green-dark)}
+.disc-badge{background:#fff3e0;color:#e65100;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700}
+.stock-cell{display:flex;flex-direction:column;gap:2px}
+.stock-num{font-size:13px;font-weight:700}
+.stock-bar-wrap{width:60px;height:4px;background:var(--border);border-radius:4px;overflow:hidden}
+.stock-bar{height:100%;border-radius:4px}
+.stock-ok .stock-bar{background:var(--green)}
+.stock-low .stock-bar{background:#ff9800}
+.stock-out .stock-bar{background:#f44336}
+.stock-tag{font-size:10px;font-weight:700}
+.stock-ok .stock-tag{color:var(--green)}
+.stock-low .stock-tag{color:#ff9800}
+.stock-out .stock-tag{color:#f44336}
+
+/* STATUS TOGGLE */
+.toggle-switch{position:relative;width:40px;height:22px;display:inline-block}
+.toggle-switch input{opacity:0;width:0;height:0}
+.slider-knob{position:absolute;inset:0;background:var(--border);border-radius:24px;cursor:pointer;transition:background .3s}
+.slider-knob::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.toggle-switch input:checked + .slider-knob{background:var(--green)}
+.toggle-switch input:checked + .slider-knob::before{transform:translateX(18px)}
+
+/* ACTION BUTTONS */
+.action-btns{display:flex;gap:6px}
+.btn-edit{width:30px;height:30px;border-radius:8px;border:none;background:var(--blue-light,#e3f2fd);color:#1565c0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s}
+.btn-edit:hover{background:#bbdefb}
+.btn-del{width:30px;height:30px;border-radius:8px;border:none;background:#ffebee;color:#e53935;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s}
+.btn-del:hover{background:#ffcdd2}
+
+/* EMPTY STATE */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;text-align:center}
+.empty-icon{font-size:56px}
+.empty-state h3{font-size:18px;font-weight:800}
+.empty-state p{color:var(--muted);font-size:14px}
+
+/* MODAL */
+.modal-backdrop{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);align-items:center;justify-content:center}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--white);border-radius:20px;width:min(560px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.25);animation:modalIn .3s cubic-bezier(.34,1.56,.64,1)}
+.modal.small-modal{width:min(380px,96vw)}
+@keyframes modalIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 0}
+.modal-header h3{font-size:17px;font-weight:800}
+.modal-close{width:30px;height:30px;border-radius:50%;border:none;background:var(--bg);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
+.modal-body{padding:16px 20px}
+.modal-footer{padding:0 20px 20px;display:flex;gap:10px;justify-content:flex-end}
+
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.req{color:#e53935}
+.input-wrap{display:flex;align-items:center;gap:10px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:0 14px;height:44px;transition:border-color .2s,box-shadow .2s}
+.input-wrap:focus-within{border-color:var(--green);box-shadow:0 0 0 3px rgba(76,175,80,.12)}
+.input-wrap i{color:var(--muted);font-size:13px;flex-shrink:0}
+.input-wrap input,.input-wrap select,.input-wrap textarea{border:none;background:none;outline:none;width:100%;font-family:var(--font);font-size:14px;color:var(--text)}
+.textarea-wrap{height:auto;padding:12px 14px;align-items:flex-start}
+.textarea-wrap textarea{resize:vertical;min-height:55px;line-height:1.5}
+
+/* IMG UPLOAD */
+.img-upload-box{display:block;width:100%;height:130px;border:2px dashed var(--green-mid);border-radius:12px;cursor:pointer;overflow:hidden;position:relative;background:var(--bg);transition:border-color .2s}
+.img-upload-box:hover{border-color:var(--green)}
+.img-upload-box img{width:100%;height:100%;object-fit:cover}
+.img-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;color:var(--muted)}
+.img-placeholder i{font-size:28px;color:var(--green-mid)}
+.img-placeholder span{font-size:13px;font-weight:600}
+
+/* PRICE PREVIEW */
+.price-preview{background:var(--green-light);border-radius:12px;padding:14px 16px;margin-bottom:14px;position:relative}
+.pp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pp-label{font-size:13px;color:var(--muted);font-weight:600}
+.final-lbl{font-weight:800;color:var(--text)}
+.pp-orig{font-size:14px;font-weight:700;color:var(--muted)}
+.pp-disc{font-size:14px;font-weight:700;color:#e53935}
+.pp-divider{height:1px;background:var(--green-mid);margin:8px 0}
+.pp-final{font-size:20px;font-weight:800;color:var(--green-dark)}
+.pp-badge{position:absolute;top:10px;right:10px;background:#e53935;color:#fff;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:800}
+
+/* STATUS ROW */
+.status-toggle-row{display:flex;align-items:center;gap:10px}
+
+/* BUTTONS */
+.btn-cancel{padding:10px 20px;border:1.5px solid var(--border);background:var(--white);color:var(--muted);border-radius:10px;font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-save{padding:10px 22px;background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(76,175,80,.3)}
+.btn-delete-confirm{padding:10px 22px;background:#e53935;color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green-dark);color:#fff;border-radius:12px;padding:12px 22px;font-size:14px;font-weight:700;z-index:999;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;display:flex;align-items:center;gap:8px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.error{background:#e53935}
+
+/* HAMBURGER */
+.hamburger{display:none;position:fixed;bottom:18px;left:18px;z-index:200;width:44px;height:44px;border-radius:50%;background:var(--green);color:#fff;border:none;font-size:18px;cursor:pointer;box-shadow:0 4px 14px rgba(76,175,80,.4)}
+.sidebar-overlay{display:none;position:fixed;inset:0;z-index:88;background:rgba(0,0,0,.35)}
+
+/* RESPONSIVE */
+@media(max-width:1024px){.summary-row{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){
+  :root{--header-h:54px}
+  .sidebar{position:fixed;top:var(--header-h);left:0;bottom:0;transform:translateX(-100%);box-shadow:4px 0 20px rgba(0,0,0,.15)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .hamburger{display:flex;align-items:center;justify-content:center}
+  .main-content{padding:14px 10px}
+  .icon-btn:not(.icon-only){display:none}
+  .navbar-logo{min-width:auto}
+  .logo-text{font-size:17px}
+  .summary-row{grid-template-columns:repeat(2,1fr)}
+  .toolbar-left{width:100%}
+  .search-box{min-width:unset;flex:1}
+  .form-row{grid-template-columns:1fr}
+}
+@media(max-width:480px){.summary-row{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<script>
+// ── DATA STORE ──
+let products = [
+  {id:1,name:'Fresh Strawberry',cat:'Fruits',desc:'Sweet & juicy from local farms',price:200,discount:15,unit:'kg',stock:45,status:true,img:'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=100&q=80'},
+  {id:2,name:'Broccoli',cat:'Vegetables',desc:'Rich in vitamins and fiber',price:120,discount:0,unit:'kg',stock:30,status:true,img:'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?w=100&q=80'},
+  {id:3,name:'Fresh Apple',cat:'Fruits',desc:'Crispy and naturally sweet',price:180,discount:10,unit:'kg',stock:8,status:true,img:'https://images.unsplash.com/photo-1567306226416-28f0efdc88ce?w=100&q=80'},
+  {id:4,name:'Cabbage',cat:'Vegetables',desc:'Organic farm fresh cabbage',price:60,discount:0,unit:'kg',stock:0,status:false,img:'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=100&q=80'},
+  {id:5,name:'Orange',cat:'Fruits',desc:'Vitamin C packed citrus',price:150,discount:20,unit:'kg',stock:55,status:true,img:'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab12?w=100&q=80'},
+];
+let nextId = 6;
+let editingId = null;
+let deleteId = null;
+let currentImg = '';
+let selectedIds = new Set();
+
+// ── RENDER ──
+function renderTable(data) {
+  const tbody = document.getElementById('productBody');
+  const empty = document.getElementById('emptyState');
+  tbody.innerHTML = '';
+  if (!data.length) { empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+  data.forEach(p => {
+    const final = p.price - (p.price * p.discount / 100);
+    const stockClass = p.stock === 0 ? 'stock-out' : p.stock < 10 ? 'stock-low' : 'stock-ok';
+    const stockTag = p.stock === 0 ? 'Out of Stock' : p.stock < 10 ? 'Low Stock' : 'In Stock';
+    const stockPct = Math.min(100, (p.stock / 100) * 100);
+    const isChecked = selectedIds.has(p.id);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" class="row-check" data-id="${p.id}" ${isChecked?'checked':''} onchange="toggleRowCheck(this)"/></td>
+      <td><div class="prod-cell">
+        ${p.img ? `<img src="${p.img}" class="prod-thumb" onerror="this.style.display='none'"/>` : `<div class="prod-thumb-placeholder">${getCatEmoji(p.cat)}</div>`}
+        <div><div class="prod-name">${p.name}</div><div class="prod-desc">${p.desc||''}</div></div>
+      </div></td>
+      <td><span class="cat-tag">${p.cat}</span></td>
+      <td><div class="price-orig">৳${p.price.toFixed(2)}</div></td>
+      <td>${p.discount > 0 ? `<span class="disc-badge">-${p.discount}%</span>` : '<span style="color:var(--muted);font-size:12px;">—</span>'}</td>
+      <td><div class="price-final">৳${final.toFixed(2)} <small style="font-size:10px;color:var(--muted)">/${p.unit}</small></div></td>
+      <td><div class="stock-cell ${stockClass}">
+        <div class="stock-num">${p.stock} ${p.unit}</div>
+        <div class="stock-bar-wrap"><div class="stock-bar" style="width:${stockPct}%"></div></div>
+        <div class="stock-tag">${stockTag}</div>
+      </div></td>
+      <td><label class="toggle-switch"><input type="checkbox" ${p.status?'checked':''} onchange="toggleStatus(${p.id},this)"/><span class="slider-knob"></span></label></td>
+      <td><div class="action-btns">
+        <button class="btn-edit" onclick="openEdit(${p.id})" title="Edit"><i class="fa fa-pen"></i></button>
+        <button class="btn-del" onclick="openDelete(${p.id})" title="Delete"><i class="fa fa-trash"></i></button>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+  updateSummary();
+  updateProductCount(data.length);
+}
+
+function getCatEmoji(cat) {
+  const map = {Fruits:'🍎',Vegetables:'🥦',Fish:'🐟',Meat:'🥩',Bread:'🍞',Drinks:'🧃','Sea Food':'🦐','Ice Cream':'🍦',Juice:'🍹',Jam:'🍓'};
+  return map[cat] || '📦';
+}
+
+function updateSummary() {
+  document.getElementById('totalProducts').textContent = products.length;
+  document.getElementById('activeCount').textContent = products.filter(p=>p.status).length;
+  document.getElementById('lowStockCount').textContent = products.filter(p=>p.stock>0&&p.stock<10).length;
+  document.getElementById('outStockCount').textContent = products.filter(p=>p.stock===0).length;
+}
+
+function updateProductCount(n) {
+  document.getElementById('productCountLabel').textContent = `${n} product${n!==1?'s':''}`;
+}
+
+// ── FILTER ──
+function filterProducts() {
+  const q = document.getElementById('productSearch').value.toLowerCase();
+  const cat = document.getElementById('catFilter').value;
+  const stock = document.getElementById('stockFilter').value;
+  let data = products.filter(p => {
+    const matchQ = p.name.toLowerCase().includes(q) || p.cat.toLowerCase().includes(q);
+    const matchCat = !cat || p.cat === cat;
+    const matchStock = !stock ||
+      (stock==='In Stock' && p.stock>=10) ||
+      (stock==='Low Stock' && p.stock>0&&p.stock<10) ||
+      (stock==='Out of Stock' && p.stock===0);
+    return matchQ && matchCat && matchStock;
+  });
+  renderTable(data);
+}
+
+// ── SELECT ──
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.row-check').forEach(c => {
+    c.checked = cb.checked;
+    const id = parseInt(c.dataset.id);
+    cb.checked ? selectedIds.add(id) : selectedIds.delete(id);
+  });
+  updateBulkBtn();
+}
+function toggleRowCheck(cb) {
+  const id = parseInt(cb.dataset.id);
+  cb.checked ? selectedIds.add(id) : selectedIds.delete(id);
+  updateBulkBtn();
+}
+function updateBulkBtn() {
+  document.getElementById('bulkDeleteBtn').style.display = selectedIds.size > 0 ? 'flex' : 'none';
+}
+function bulkDelete() {
+  if (!selectedIds.size) return;
+  products = products.filter(p => !selectedIds.has(p.id));
+  selectedIds.clear();
+  updateBulkBtn();
+  renderTable(products);
+  showToast(`Products deleted successfully`, false);
+}
+
+// ── STATUS TOGGLE ──
+function toggleStatus(id, cb) {
+  const p = products.find(x => x.id === id);
+  if (p) { p.status = cb.checked; updateSummary(); showToast(`${p.name} marked as ${p.status?'Active':'Inactive'}`, false); }
+}
+
+// ── MODAL ──
+function openModal() {
+  editingId = null; currentImg = '';
+  document.getElementById('modalTitle').textContent = 'Add New Product';
+  document.getElementById('saveBtnLabel').textContent = 'Add Product';
+  document.getElementById('pName').value = '';
+  document.getElementById('pCat').value = '';
+  document.getElementById('pDesc').value = '';
+  document.getElementById('pPrice').value = '';
+  document.getElementById('pDiscount').value = '';
+  document.getElementById('pStock').value = '';
+  document.getElementById('pUnit').value = 'kg';
+  document.getElementById('pStatus').checked = true;
+  document.getElementById('statusLabel').textContent = 'Active';
+  document.getElementById('statusLabel').style.color = 'var(--green)';
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('imgPlaceholder').style.display = 'flex';
+  document.getElementById('imgPreview').src = '';
+  updatePricePreview();
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function openEdit(id) {
+  const p = products.find(x => x.id === id);
+  editingId = id; currentImg = p.img || '';
+  document.getElementById('modalTitle').textContent = 'Edit Product';
+  document.getElementById('saveBtnLabel').textContent = 'Save Changes';
+  document.getElementById('pName').value = p.name;
+  document.getElementById('pCat').value = p.cat;
+  document.getElementById('pDesc').value = p.desc;
+  document.getElementById('pPrice').value = p.price;
+  document.getElementById('pDiscount').value = p.discount;
+  document.getElementById('pStock').value = p.stock;
+  document.getElementById('pUnit').value = p.unit;
+  document.getElementById('pStatus').checked = p.status;
+  document.getElementById('statusLabel').textContent = p.status ? 'Active' : 'Inactive';
+  document.getElementById('statusLabel').style.color = p.status ? 'var(--green)' : 'var(--muted)';
+  if (p.img) { document.getElementById('imgPreview').src = p.img; document.getElementById('imgPreview').style.display = 'block'; document.getElementById('imgPlaceholder').style.display = 'none'; }
+  else { document.getElementById('imgPreview').style.display = 'none'; document.getElementById('imgPlaceholder').style.display = 'flex'; }
+  updatePricePreview();
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); }
+
+function saveProduct() {
+  const name = document.getElementById('pName').value.trim();
+  const cat = document.getElementById('pCat').value;
+  const price = parseFloat(document.getElementById('pPrice').value);
+  const stock = parseInt(document.getElementById('pStock').value);
+  if (!name) { showToast('Please enter a product name', true); return; }
+  if (!cat) { showToast('Please select a category', true); return; }
+  if (isNaN(price) || price < 0) { showToast('Please enter a valid price', true); return; }
+  if (isNaN(stock) || stock < 0) { showToast('Please enter valid stock quantity', true); return; }
+
+  const prod = {
+    id: editingId || nextId++,
+    name, cat,
+    desc: document.getElementById('pDesc').value,
+    price,
+    discount: parseFloat(document.getElementById('pDiscount').value) || 0,
+    unit: document.getElementById('pUnit').value,
+    stock,
+    status: document.getElementById('pStatus').checked,
+    img: currentImg,
+  };
+
+  if (editingId) {
+    const idx = products.findIndex(x => x.id === editingId);
+    products[idx] = prod;
+    showToast(`${name} updated successfully!`, false);
+  } else {
+    products.push(prod);
+    showToast(`${name} added successfully!`, false);
+  }
+  closeModal();
+  filterProducts();
+}
+
+// ── DELETE ──
+function openDelete(id) {
+  deleteId = id;
+  const p = products.find(x => x.id === id);
+  document.getElementById('deleteProductName').textContent = `"${p.name}"`;
+  document.getElementById('deleteBackdrop').classList.add('open');
+}
+function closeDeleteModal() { document.getElementById('deleteBackdrop').classList.remove('open'); }
+function confirmDelete() {
+  const p = products.find(x => x.id === deleteId);
+  products = products.filter(x => x.id !== deleteId);
+  closeDeleteModal();
+  filterProducts();
+  showToast(`${p.name} deleted`, false);
+}
+
+// ── PRICE PREVIEW ──
+function updatePricePreview() {
+  const price = parseFloat(document.getElementById('pPrice').value) || 0;
+  const disc = parseFloat(document.getElementById('pDiscount').value) || 0;
+  const discAmt = price * disc / 100;
+  const final = price - discAmt;
+  document.getElementById('ppOrig').textContent = `৳${price.toFixed(2)}`;
+  document.getElementById('ppDisc').textContent = `- ৳${discAmt.toFixed(2)}`;
+  document.getElementById('ppFinal').textContent = `৳${final.toFixed(2)}`;
+  const badge = document.getElementById('ppBadge');
+  if (disc > 0) { badge.style.display = 'block'; badge.textContent = `-${disc}% OFF`; }
+  else { badge.style.display = 'none'; }
+}
+
+// ── IMG PREVIEW ──
+function previewProdImg(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  currentImg = URL.createObjectURL(file);
+  document.getElementById('imgPreview').src = currentImg;
+  document.getElementById('imgPreview').style.display = 'block';
+  document.getElementById('imgPlaceholder').style.display = 'none';
+}
+
+// ── STATUS LABEL ──
+document.getElementById('pStatus').addEventListener('change', function() {
+  document.getElementById('statusLabel').textContent = this.checked ? 'Active' : 'Inactive';
+  document.getElementById('statusLabel').style.color = this.checked ? 'var(--green)' : 'var(--muted)';
+});
+
+// ── SIDEBAR ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+document.querySelectorAll('.nav-item:not(.logout)').forEach(item => {
+  item.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    if (window.innerWidth <= 768) toggleSidebar();
+  });
+});
+
+// ── TOAST ──
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<i class="fa fa-${isError?'exclamation-circle':'check-circle'}"></i> ${msg}`;
+  t.className = 'toast' + (isError?' error':'') + ' show';
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Init
+renderTable(products);
+</script>
+</body>
+</html>

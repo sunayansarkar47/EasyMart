@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login – EasyMart</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --green-deep:  #0a3d1f;
+      --green-mid:   #0f5c30;
+      --green-vivid: #16a34a;
+      --green-light: #22c55e;
+      --green-pale:  #dcfce7;
+      --cream:       #f7f4ef;
+      --gold:        #d4a843;
+      --text:        #1a2e1f;
+      --muted:       #6b7c6e;
+      --error:       #dc2626;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #e8f5ee 0%, #f7f4ef 50%, #e3f2fd 100%);
+      background-size: 400% 400%;
+      animation: bgShift 12s ease infinite;
+      z-index: -1;
+    }
+
+    @keyframes bgShift {
+      0%, 100% { background-position: 0% 50%; }
+      50%       { background-position: 100% 50%; }
+    }
+
+    /* Card */
+    .auth-card {
+      width: 1000px;
+      max-width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+      animation: cardIn 0.7s cubic-bezier(0.22,1,0.36,1) forwards;
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: scale(0.95) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Left panel */
+    .auth-panel-left {
+      background: linear-gradient(160deg, var(--green-deep) 0%, #0f4a25 50%, #1c5b2e 100%);
+      padding: 56px 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-panel-left::before {
+      content: '';
+      position: absolute;
+      width: 380px; height: 380px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,197,94,0.2) 0%, transparent 70%);
+      bottom: -80px; right: -80px;
+    }
+
+    .auth-panel-left::after {
+      content: '';
+      position: absolute;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,168,67,0.15) 0%, transparent 70%);
+      top: -40px; left: -40px;
+    }
+
+    .panel-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .panel-logo-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--green-vivid), var(--green-light));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    .panel-logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .panel-logo-text span { color: var(--green-light); }
+
+    .panel-body {
+      position: relative;
+      z-index: 2;
+    }
+
+    .panel-body h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+
+    .panel-body p {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.7;
+    }
+
+    .panel-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .panel-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .panel-features li::before {
+      content: '✓';
+      width: 22px; height: 22px;
+      background: rgba(34,197,94,0.2);
+      border: 1px solid rgba(34,197,94,0.4);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem;
+      color: var(--green-light);
+      flex-shrink: 0;
+    }
+
+    /* Right panel */
+    .auth-panel-right {
+      background: #fff;
+      padding: 52px 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .auth-panel-right h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .auth-subtitle {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 36px;
+    }
+
+    /* Input groups */
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.04em;
+      margin-bottom: 7px;
+    }
+
+    .field-optional {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 400;
+      margin-left: 4px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid #e2e8e0;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      color: var(--text);
+      background: #fafbfa;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      outline: none;
+    }
+
+    .field input:focus {
+      border-color: var(--green-vivid);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(22,163,74,0.1);
+    }
+
+    .field input::placeholder { color: #b0bdb3; }
+
+    /* Row for checkbox + forgot */
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      font-size: 0.82rem;
+    }
+
+    .field-row label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .field-row input[type="checkbox"] {
+      width: 15px; height: 15px;
+      accent-color: var(--green-vivid);
+    }
+
+    .field-row a {
+      color: var(--green-vivid);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .field-row a:hover { color: var(--green-deep); }
+
+    /* Submit */
+    .auth-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--green-vivid), var(--green-light));
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(22,163,74,0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-bottom: 24px;
+      letter-spacing: 0.02em;
+    }
+
+    .auth-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(22,163,74,0.45); }
+    .auth-btn:active { transform: translateY(0); }
+
+    /* Divider */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      color: #cdd5d0;
+      font-size: 0.78rem;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after { content: ''; flex: 1; height: 1px; background: #e8edea; }
+
+    .switch-auth {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .switch-auth a {
+      color: var(--green-vivid);
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .switch-auth a:hover { color: var(--green-deep); }
+
+    /* Error message */
+    .error-msg {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: var(--error);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 0.83rem;
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    .error-msg.show { display: block; }
+
+    @media (max-width: 720px) {
+      .auth-card { grid-template-columns: 1fr; }
+      .auth-panel-left { display: none; }
+      .auth-panel-right { padding: 40px 30px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-card">
+
+  <!-- LEFT PANEL -->
+  <div class="auth-panel-left">
+    <div class="panel-logo">
+      <div class="panel-logo-icon">🛒</div>
+      <div class="panel-logo-text">Easy<span>Mart</span></div>
+    </div>
+
+    <div class="panel-body">
+      <h2>Welcome back to EasyMart</h2>
+      <p>Your one-stop platform for smart local shopping and retail management.</p>
+    </div>
+
+    <ul class="panel-features">
+      <li>Real-time inventory management</li>
+      <li>Smart sales analytics dashboard</li>
+      <li>Secure, cloud-based platform</li>
+      <li>Connect shops with customers</li>
+    </ul>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="auth-panel-right">
+    <h2>Login to Your Account</h2>
+    <p class="auth-subtitle">Enter your credentials to continue</p>
+
+    <div class="error-msg" id="errorMsg">Invalid username or password. Please try again.</div>
+
+    <form id="loginForm" novalidate>
+
+      <div class="field">
+        <label for="username">Email or Username</label>
+        <input type="text" id="username" placeholder="e.g. admin or you@email.com" required autocomplete="username">
+      </div>
+
+      <div class="field">
+        <label for="shopId">Shop ID <span class="field-optional">(optional – for shopkeepers)</span></label>
+        <input type="text" id="shopId" placeholder="e.g. SHOP-0042">
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Your password" required autocomplete="current-password">
+      </div>
+
+      <div class="field-row">
+        <label>
+          <input type="checkbox" id="rememberMe"> Remember me
+        </label>
+        <a href="#">Forgot Password?</a>
+      </div>
+
+      <button type="submit" class="auth-btn">Login →</button>
+
+      <div class="auth-divider">or</div>
+
+      <p class="switch-auth">
+        New to EasyMart? <a href="choice.html">Create an account</a>
+      </p>
+
+    </form>
+  </div>
+
+</div>
+
+<script>
+  /**
+   * LOGIN LOGIC
+   *
+   * Currently uses hardcoded credentials.
+   * TODO: Replace the validation block with a fetch() call to your API:
+   *
+   *   const res  = await fetch('/api/login', {
+   *     method: 'POST',
+   *     headers: { 'Content-Type': 'application/json' },
+   *     body: JSON.stringify({ username, password, shopId })
+   *   });
+   *   const data = await res.json();
+   *   if (data.success) { ... redirect ... }
+   *   else { showError(); }
+   */
+
+  const loginForm = document.getElementById('loginForm');
+  const errorMsg  = document.getElementById('errorMsg');
+
+  loginForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const shopId   = document.getElementById('shopId').value.trim();
+
+    errorMsg.classList.remove('show');
+
+    if (!username || !password) {
+      errorMsg.textContent = 'Please enter your username and password.';
+      errorMsg.classList.add('show');
+      return;
+    }
+
+    // ── Hardcoded validation (replace with API call) ──
+    if (username === 'admin' && password === '1234') {
+      localStorage.setItem('easymartUser', username);
+
+      if (shopId !== '') {
+        localStorage.setItem('shopId', shopId);
+        window.location.href = 'product-entry.html';
+      } else {
+        window.location.href = 'home.html';
+      }
+    } else {
+      errorMsg.textContent = 'Invalid username or password. Please try again.';
+      errorMsg.classList.add('show');
+    }
+  });
+</script>
+
+</body>
+</html>

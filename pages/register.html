@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Account — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-depth="1">
+<div id="floatingToggle"></div>
+<div class="auth-shell">
+  <aside class="auth-art">
+    <a href="../index.html" class="brand"><span class="dot"></span><span class="easy">Easy</span><span class="mart">Mart</span></a>
+    <div>
+      <h2>Join the <em>neighborhood</em>.</h2>
+      <p>15 shops, 60+ products, real shopkeepers in real Dhaka thanas. Get fresh produce, late-night snacks and weekend pastries delivered.</p>
+      <div class="testimonial">
+        <p>"Setting up my shop took 5 minutes. Now I have 200+ regular customers from Banani who order coffee every morning."</p>
+        <div class="author">
+          <img src="https://i.pravatar.cc/200?img=47" alt="Maliha" onerror="this.src='https://i.pravatar.cc/200?img=2'">
+          <div><strong>Maliha Karim</strong><br><span>Banani Coffee Roasters · Owner</span></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:.82rem;opacity:.6">© 2026 EasyMart · Built with care in Dhaka</p>
+  </aside>
+
+  <main class="auth-form-wrap">
+    <form class="auth-form" id="regForm" novalidate>
+      <a href="../index.html" class="back-link">← Back to homepage</a>
+      <h1 class="display">Create your account</h1>
+      <p class="sub">It takes about a minute.</p>
+
+      <div class="role-tabs">
+        <button type="button" class="active" data-role="customer">Customer</button>
+        <button type="button" data-role="shopkeeper">Shopkeeper</button>
+        <button type="button" data-role="admin">Admin</button>
+      </div>
+
+      <div class="stack">
+        <div class="field-row">
+          <div class="field"><label>Full name</label><input class="input" id="name" placeholder="Your name" required></div>
+          <div class="field"><label>Phone</label><input class="input" id="phone" placeholder="+880 17xx xxx xxx"></div>
+        </div>
+        <div class="field"><label>Email address</label><input class="input" id="email" type="email" placeholder="you@example.com" required></div>
+        <div class="field-row">
+          <div class="field"><label>Password</label><input class="input" id="password" type="password" placeholder="At least 6 characters" required></div>
+          <div class="field"><label>Confirm password</label><input class="input" id="password2" type="password" placeholder="Repeat password" required></div>
+        </div>
+
+        <!-- CUSTOMER LOCATION -->
+        <div id="customerExtra">
+          <h4 class="font-serif" style="margin-top:8px;margin-bottom:4px;font-size:1.05rem">Your location</h4>
+          <p class="muted" style="font-size:.82rem;margin-bottom:10px">Free-text fields with autocomplete from existing stores in our network.</p>
+          <div class="field-row">
+            <div class="field autocomplete"><label>Division</label><input class="input js-loc-input" data-f="division" placeholder="e.g. Dhaka" autocomplete="off"><div class="ac-list" data-for="division" hidden></div></div>
+            <div class="field autocomplete"><label>District</label><input class="input js-loc-input" data-f="district" placeholder="e.g. Dhaka" autocomplete="off"><div class="ac-list" data-for="district" hidden></div></div>
+          </div>
+          <div class="field-row">
+            <div class="field autocomplete"><label>Upazila / Thana</label><input class="input js-loc-input" data-f="upazila" placeholder="e.g. Dhanmondi" autocomplete="off"><div class="ac-list" data-for="upazila" hidden></div></div>
+            <div class="field autocomplete"><label>Area</label><input class="input js-loc-input" data-f="area" placeholder="e.g. Dhanmondi 27" autocomplete="off"><div class="ac-list" data-for="area" hidden></div></div>
+          </div>
+        </div>
+
+        <!-- SHOPKEEPER EXTRA -->
+        <div id="shopkeeperExtra" hidden>
+          <h4 class="font-serif" style="margin-top:8px;margin-bottom:4px;font-size:1.05rem">Your shop</h4>
+          <div class="field"><label>Shop name</label><input class="input" id="shopName" placeholder="e.g. FreshKart Dhanmondi"></div>
+          <p class="muted" style="font-size:.78rem;margin-top:10px">You can fill the rest of your shop's details after sign-up.</p>
+        </div>
+
+        <!-- ADMIN EXTRA -->
+        <div id="adminExtra" hidden>
+          <div class="field"><label>Invite code</label><input class="input" id="inviteCode" placeholder="Provided by Super Admin"></div>
+          <p class="muted" style="font-size:.78rem">Demo invite code: <code>EM-ADMIN-2026</code></p>
+        </div>
+
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:.85rem;color:var(--text-2);margin-top:6px">
+          <input type="checkbox" id="agree" style="margin-top:3px">
+          <span>I agree to EasyMart's <a href="javascript:void(0)">Terms of Service</a> and <a href="javascript:void(0)">Privacy Policy</a>.</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Create account</button>
+      </div>
+
+      <p class="form-foot">Already have an account? <a href="login.html">Log in →</a></p>
+    </form>
+  </main>
+</div>
+
+<script src="../config.js"></script>
+<script src="../js/data.js"></script>
+<script src="../lib/supabase.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/app.js"></script>
+<script>
+(function(){
+  // Inject floating theme toggle
+  $("#floatingToggle").innerHTML = themeToggleBtn("floating");
+
+  let role = "customer";
+  const setRole = r => {
+    role = r;
+    $$(".role-tabs button").forEach(b => b.classList.toggle("active", b.dataset.role === r));
+    $("#customerExtra").hidden  = r !== "customer";
+    $("#shopkeeperExtra").hidden = r !== "shopkeeper";
+    $("#adminExtra").hidden     = r !== "admin";
+  };
+  $$(".role-tabs button").forEach(b => b.addEventListener("click", () => setRole(b.dataset.role)));
+
+  // Autocomplete for location fields
+  $$(".js-loc-input").forEach(inp => {
+    const list = $(`.ac-list[data-for="${inp.dataset.f}"]`);
+    const render = () => {
+      const ss = locSuggestions(inp.dataset.f, inp.value);
+      list.innerHTML = ss.map(s => `<div class="ac-item">${escHTML(s)}</div>`).join("");
+      list.hidden = !ss.length;
+    };
+    inp.addEventListener("focus", render);
+    inp.addEventListener("input", render);
+    inp.addEventListener("blur", () => setTimeout(() => list.hidden = true, 150));
+    list.addEventListener("mousedown", e => {
+      const it = e.target.closest(".ac-item"); if (!it) return;
+      inp.value = it.textContent; list.hidden = true;
+    });
+  });
+
+  $("#regForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("#name").value.trim();
+    const email = $("#email").value.trim();
+    const pass = $("#password").value;
+    const pass2 = $("#password2").value;
+    if (!name || !email) { toast("Please fill in your name and email", "error"); return; }
+    if (pass.length < 6)        { toast("Password must be at least 6 characters", "error"); return; }
+    if (pass !== pass2)          { toast("Passwords don't match", "error"); return; }
+    if (!$("#agree").checked)    { toast("Please accept the terms to continue", "error"); return; }
+    if (DATA_USERS.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+      toast("That email already has an account — log in instead", "error"); return;
+    }
+    if (role === "admin" && $("#inviteCode").value.trim() !== "EM-ADMIN-2026") {
+      toast("Invalid admin invite code", "error"); return;
+    }
+
+    // Wait for Supabase boot loader if applicable
+    if (window.DB?.ready) await window.DB.ready;
+
+    // Build profile shared by both paths
+    const profile = {
+      type: role, name, email, password: pass, phone: $("#phone").value.trim(),
+      avatar: "https://i.pravatar.cc/200?img=" + (Math.floor(Math.random() * 70) + 1),
+      status: "active"
+    };
+    if (role === "customer") {
+      profile.division = $('[data-f="division"]').value.trim() || "Dhaka";
+      profile.district = $('[data-f="district"]').value.trim() || "Dhaka";
+      profile.upazila  = $('[data-f="upazila"]').value.trim()  || "Dhanmondi";
+      profile.area     = $('[data-f="area"]').value.trim()     || "Dhanmondi 27";
+      profile.addresses = [{ id: 1, label: "Home", division: profile.division, district: profile.district, upazila: profile.upazila, area: profile.area, street: "", is_default: true }];
+      profile.coins = 0;
+      locSave({ division: profile.division, district: profile.district, upazila: profile.upazila, area: profile.area });
+    }
+    if (role === "shopkeeper") profile.store_ids = [];
+    if (role === "admin") profile.role_level = "Moderator";
+
+    // Path A: Supabase configured
+    if (window.DB?.isSupabase && window.DB?.write?.signUp) {
+      try {
+        const newRow = await window.DB.write.signUp(profile);
+        const safe = { ...newRow }; delete safe.password;
+        if (role === "customer") { safe.coins = 0; safe.tier = "Bronze"; }
+        localStorage.setItem("em_user", JSON.stringify(safe));
+        appendAuditLog({ action: "CREATE", entity: "users", entity_id: safe.id, description: `New ${role} registered: ${name}` });
+        toast("Welcome to EasyMart, " + name.split(" ")[0] + "! Check your email if confirmation is required.");
+        setTimeout(() => location.href = "dashboard.html", 800);
+        return;
+      } catch (err) {
+        toast(err.message || "Sign-up failed", "error");
+        return;
+      }
+    }
+
+    // Path B: demo mode — push into DATA_USERS in memory
+    const id = role === "customer" ? Math.max(0, ...DATA_USERS.filter(u => u.type === "customer").map(u => u.id)) + 1
+            : role === "shopkeeper" ? Math.max(200, ...DATA_USERS.filter(u => u.type === "shopkeeper").map(u => u.id)) + 1
+            : Math.max(300, ...DATA_USERS.filter(u => u.type === "admin").map(u => u.id)) + 1;
+    const newUser = { id, password: pass, created_at: new Date().toISOString().slice(0, 10), ...profile };
+    DATA_USERS.push(newUser);
+    const safe = { ...newUser }; delete safe.password;
+    if (role === "customer") { safe.coins = 0; safe.tier = "Bronze"; }
+    localStorage.setItem("em_user", JSON.stringify(safe));
+    appendAuditLog({ action: "CREATE", entity: "users", entity_id: id, description: `New ${role} registered: ${name}` });
+    toast("Welcome to EasyMart, " + name.split(" ")[0] + "!");
+    setTimeout(() => location.href = "dashboard.html", 700);
+  });
+})();
+</script>
+</body>
+</html>

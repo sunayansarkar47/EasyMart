@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Analytics — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Analytics</h1>
+      </div>
+      <div class="tabs" id="rangeTabs">
+        <button data-r="today">Today</button>
+        <button class="active" data-r="week">This week</button>
+        <button data-r="month">This month</button>
+        <button data-r="3m">Last 3 months</button>
+      </div>
+    </div>
+
+    <div class="stat-grid" id="statCards"></div>
+
+    <div class="rg-21" style="margin-bottom:18px">
+      <div class="dash-section">
+        <h3>Orders per day</h3>
+        <div class="chart-wrap"><canvas id="lineOrders"></canvas></div>
+      </div>
+      <div class="dash-section">
+        <h3>Orders by category</h3>
+        <div class="chart-wrap"><canvas id="pieCat"></canvas></div>
+      </div>
+    </div>
+
+    <div class="rg-21" style="margin-bottom:18px">
+      <div class="dash-section">
+        <h3>Peak ordering hours</h3>
+        <div class="chart-wrap"><canvas id="barHour"></canvas></div>
+      </div>
+      <div class="dash-section">
+        <h3>Revenue per week</h3>
+        <div class="chart-wrap"><canvas id="barRev"></canvas></div>
+      </div>
+    </div>
+
+    <div class="dash-section">
+      <h3>Top 5 selling products</h3>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>#</th><th>Product</th><th>Units sold</th><th>Revenue</th></tr></thead>
+        <tbody id="topProds"></tbody>
+      </table></div>
+    </div>
+  </main>
+</div>
+
+<script src="../../lib/chart.min.js"></script>
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script src="../../js/charts.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["shopkeeper"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("analytics"); attachSidebarEvents();
+
+  const myStoreIds = u.store_ids || (u.store_id ? [u.store_id] : []);
+  const myProducts = DATA_PRODUCTS.filter(p => myStoreIds.includes(p.store_id));
+  const myOrders   = DS.orders().filter(o => myStoreIds.includes(o.store_id));
+
+  // Sum per-store seed analytics for the shopkeeper
+  function totalsFromSeed() {
+    let revenue_week = 0, orders_week = 0, customers = 0;
+    myStoreIds.forEach(id => {
+      const a = DATA_ANALYTICS.store[id]; if (!a) return;
+      revenue_week += a.revenue_week;
+      orders_week  += a.orders_week;
+      customers    += a.customers;
+    });
+    const avg_order = orders_week ? Math.round(revenue_week / orders_week) : 0;
+    return { revenue_week, orders_week, customers, avg_order };
+  }
+
+  let charts = [];
+  function destroy() { charts.forEach(c => c?.destroy && c.destroy()); charts = []; }
+
+  function render(range) {
+    destroy();
+    const totals = totalsFromSeed();
+    const mult = { today: 0.18, week: 1, month: 4.2, "3m": 12.6 }[range] || 1;
+    const orders = Math.round(totals.orders_week * mult);
+    const revenue = Math.round(totals.revenue_week * mult);
+    const customers = Math.round(totals.customers * mult);
+    const aov = orders ? Math.round(revenue / orders) : 0;
+
+    $("#statCards").innerHTML = `
+      <div class="stat-card green fade-up"><span class="ic">📦</span><div class="label">Total orders</div><div class="value">${fmtNum(orders)}</div><div class="delta up">+18% vs prev</div></div>
+      <div class="stat-card orange fade-up"><span class="ic">💰</span><div class="label">Total revenue</div><div class="value">${fmtBDT(revenue)}</div><div class="delta up">+12% vs prev</div></div>
+      <div class="stat-card blue fade-up"><span class="ic">👥</span><div class="label">Customers</div><div class="value">${fmtNum(customers)}</div><div class="delta up">+8% vs prev</div></div>
+      <div class="stat-card violet fade-up"><span class="ic">🛍️</span><div class="label">Avg order value</div><div class="value">${fmtBDT(aov)}</div><div class="delta up">+4% vs prev</div></div>`;
+
+    // Orders per day — use platform.orders_per_day_30, last 7
+    const last7 = (DATA_ANALYTICS.platform.orders_per_day_30 || []).slice(-7);
+    const dayLabels = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    const myShareDay = totals.orders_week ? totals.orders_week / 350 : 1; // platform-weekly proxy
+    const dayValues = last7.map(v => Math.max(1, Math.round(v * mult * myShareDay)));
+    charts.push(renderLineChart($("#lineOrders"), dayLabels, dayValues, "Orders"));
+
+    // Orders by category — derived from my products
+    const byCat = {};
+    myProducts.forEach(p => {
+      const c = DATA_CATEGORIES.find(c => c.id === p.category_id);
+      if (!c) return;
+      byCat[c.name] = (byCat[c.name] || 0) + Math.max(1, 20 + (p.discount || 0));
+    });
+    myOrders.forEach(o => o.items.forEach(it => {
+      const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+      if (!p) return;
+      const c = DATA_CATEGORIES.find(c => c.id === p.category_id);
+      if (c) byCat[c.name] = (byCat[c.name] || 0) + it.qty * 5;
+    }));
+    const catEntries = Object.entries(byCat).sort((a,b) => b[1] - a[1]).slice(0, 6);
+    charts.push(renderDoughnut($("#pieCat"), catEntries.map(e => e[0]), catEntries.map(e => e[1])));
+
+    // Peak hours — scale platform hourly to my share
+    const hours = DATA_ANALYTICS.platform.orders_per_hour || [];
+    const hourLabels = hours.map((_, i) => i === 0 ? "12a" : i < 12 ? i + "a" : i === 12 ? "12p" : (i - 12) + "p");
+    const myShare = totals.orders_week / 1000;
+    const hourValues = hours.map(v => Math.max(0, Math.round(v * mult * myShare)));
+    charts.push(renderBarChart($("#barHour"), hourLabels, hourValues, "Orders", "#f97316"));
+
+    // Revenue per week — last 4 from platform series, scaled
+    const platRev = DATA_ANALYTICS.platform.revenue_per_week || [];
+    const revShare = platRev.length ? totals.revenue_week / (platRev[platRev.length - 1] || 1) : 0;
+    const labelsRev = platRev.slice(-4).map((_, i) => "W" + (i + 1));
+    const valuesRev = platRev.slice(-4).map(v => Math.round(v * revShare * mult));
+    charts.push(renderBarChart($("#barRev"), labelsRev, valuesRev, "Revenue", "#16a34a"));
+
+    // Top 5 — derive from actual orders, supplement with stock-based estimates
+    const sales = {};
+    myOrders.forEach(o => o.items.forEach(it => {
+      const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+      if (!p) return;
+      sales[p.id] = sales[p.id] || { name: p.name, sold: 0, revenue: 0 };
+      sales[p.id].sold += it.qty;
+      sales[p.id].revenue += priceAfter(it.price, it.discount) * it.qty;
+    }));
+    let top = Object.values(sales).sort((a,b) => b.sold - a.sold).slice(0, 5);
+    if (top.length < 5) {
+      const used = new Set(top.map(t => t.name));
+      const more = myProducts
+        .filter(p => !used.has(p.name))
+        .map(p => ({ name: p.name, sold: Math.round((100 - p.stock) * 0.6 * mult), revenue: Math.round(priceAfter(p.price, p.discount) * (100 - p.stock) * 0.6 * mult) }))
+        .sort((a,b) => b.sold - a.sold)
+        .slice(0, 5 - top.length);
+      top = top.concat(more);
+    }
+    $("#topProds").innerHTML = top.length ? top.map((p, i) => `<tr>
+      <td><span class="font-serif" style="font-size:1.2rem;font-weight:700;color:${i===0?"var(--orange-500)":"var(--text-3)"}">#${i+1}</span></td>
+      <td><strong>${escHTML(p.name)}</strong></td>
+      <td>${fmtNum(p.sold)}</td>
+      <td><strong class="font-serif txt-green">${fmtBDT(p.revenue)}</strong></td>
+    </tr>`).join("") : `<tr><td colspan="4" class="muted text-center" style="padding:30px">No sales yet</td></tr>`;
+  }
+
+  $$("#rangeTabs button").forEach(b => b.addEventListener("click", () => {
+    $$("#rangeTabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    render(b.dataset.r);
+  }));
+  render("week");
+})();
+</script>
+</body>
+</html>

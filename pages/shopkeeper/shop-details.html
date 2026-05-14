@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shop Details — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Shop details</h1>
+      </div>
+      <select id="storePicker" class="select" style="min-width:240px"></select>
+    </div>
+    <div id="formHost"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["shopkeeper"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("shop-details"); attachSidebarEvents();
+  const myStoreIds = u.store_ids || (u.store_id ? [u.store_id] : []);
+  const myStores = DATA_STORES.filter(s => myStoreIds.includes(s.id));
+  if (!myStores.length) {
+    $("#formHost").innerHTML = `<div class="empty card" style="padding:60px"><div class="ic">🏪</div><h3>No shops yet</h3></div>`;
+    return;
+  }
+  $("#storePicker").innerHTML = myStores.map(s => `<option value="${s.id}">${escHTML(s.name)}</option>`).join("");
+  let currentId = myStores[0].id;
+  $("#storePicker").addEventListener("change", e => { currentId = Number(e.target.value); render(); });
+
+  const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+  function render() {
+    const s = DATA_STORES.find(x => x.id === currentId);
+    $("#formHost").innerHTML = `
+    <div class="rg-21">
+      <div>
+        <div class="dash-section">
+          <h3>Basic information</h3>
+          <div class="stack">
+            <div class="field"><label>Shop name</label><input class="input" id="sName" value="${escHTML(s.name)}"></div>
+            <div class="field"><label>Description</label><textarea class="textarea" id="sDesc">${escHTML(s.description||"")}</textarea></div>
+            <div class="field"><label>Categories</label>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1px solid var(--border);border-radius:var(--radius)">
+                ${DATA_CATEGORIES.map(c => `<label class="badge ${(s.category_ids||[]).includes(c.id) ? "badge-green" : "badge-gray"}" style="cursor:pointer;padding:6px 12px">
+                  <input type="checkbox" class="js-cat" value="${c.id}" ${(s.category_ids||[]).includes(c.id)?"checked":""} style="margin-right:4px">${c.icon} ${escHTML(c.name)}</label>`).join("")}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-section">
+          <h3>Location</h3>
+          <div class="field-row">
+            <div class="field autocomplete"><label>Division</label><input class="input js-loc" data-f="division" value="${escHTML(s.division||"")}" autocomplete="off"><div class="ac-list" data-for="division" hidden></div></div>
+            <div class="field autocomplete"><label>District</label><input class="input js-loc" data-f="district" value="${escHTML(s.district||"")}" autocomplete="off"><div class="ac-list" data-for="district" hidden></div></div>
+          </div>
+          <div class="field-row mt-16">
+            <div class="field autocomplete"><label>Upazila</label><input class="input js-loc" data-f="upazila" value="${escHTML(s.upazila||"")}" autocomplete="off"><div class="ac-list" data-for="upazila" hidden></div></div>
+            <div class="field autocomplete"><label>Area</label><input class="input js-loc" data-f="area" value="${escHTML(s.area||"")}" autocomplete="off"><div class="ac-list" data-for="area" hidden></div></div>
+          </div>
+          <div class="field mt-16"><label>Street / House</label><input class="input" id="sStreet" value="${escHTML(s.street||"")}"></div>
+        </div>
+
+        <div class="dash-section">
+          <h3>Opening hours</h3>
+          ${DAYS.map(d => `<div class="row gap-12" style="padding:8px 0">
+            <label class="row gap-8" style="min-width:120px"><input type="checkbox" class="js-day" data-d="${d}" checked> <strong>${d}</strong></label>
+            <input class="input js-from" data-d="${d}" type="time" value="09:00" style="max-width:140px">
+            <span>to</span>
+            <input class="input js-to" data-d="${d}" type="time" value="22:00" style="max-width:140px">
+          </div>`).join("")}
+        </div>
+
+        <div class="dash-section">
+          <h3>Contact</h3>
+          <div class="field-row">
+            <div class="field"><label>Phone</label><input class="input" id="sPhone" value="${escHTML(s.phone||"")}"></div>
+            <div class="field"><label>Email</label><input class="input" id="sEmail" type="email" value="${escHTML(s.email||"")}"></div>
+          </div>
+          <div class="field mt-16"><label>Website</label><input class="input" id="sWebsite" placeholder="https://yourshop.com"></div>
+        </div>
+
+        <div style="text-align:right;margin-top:14px"><button class="btn btn-primary btn-lg" id="saveBtn">Save changes</button></div>
+      </div>
+
+      <div>
+        <div class="dash-section">
+          <h3>Shop banner &amp; images</h3>
+          <div class="image-preview" style="margin-bottom:14px"><img src="${escHTML(s.banner||s.image)}" onerror="this.parentNode.innerHTML='Preview'"></div>
+          <div class="upload-grid" style="grid-template-columns:1fr">
+            <div class="upload-tile"><h5>Upload from PC</h5><p class="small">JPG/PNG · max 2MB</p><input type="file" id="bFile" accept="image/*"></div>
+            <div class="upload-tile"><h5>Paste image link</h5><input class="input" id="bUrl" placeholder="https://..."></div>
+            <div class="upload-tile"><h5>Unsplash search</h5><div style="display:flex;gap:6px"><input class="input" id="bSearch" placeholder="bakery" style="flex:1"><button class="btn btn-secondary btn-sm" id="bGo">Go</button></div></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    // Wire location autocomplete
+    $$(".js-loc").forEach(inp => {
+      const list = $(`.ac-list[data-for="${inp.dataset.f}"]`);
+      const r = () => { const ss = locSuggestions(inp.dataset.f, inp.value); list.innerHTML = ss.map(v => `<div class="ac-item">${escHTML(v)}</div>`).join(""); list.hidden = !ss.length; };
+      inp.addEventListener("focus", r); inp.addEventListener("input", r);
+      inp.addEventListener("blur", () => setTimeout(() => list.hidden = true, 150));
+      list.addEventListener("mousedown", e => { const i = e.target.closest(".ac-item"); if (!i) return; inp.value = i.textContent; list.hidden = true; });
+    });
+
+    // Banner upload
+    $("#bFile").addEventListener("change", e => {
+      const f = e.target.files[0]; if (!f) return;
+      if (f.size > 2*1024*1024) { toast("Max 2MB", "error"); return; }
+      const r = new FileReader(); r.onload = () => { s.banner = r.result; render(); toast("Banner updated"); }; r.readAsDataURL(f);
+    });
+    $("#bUrl").addEventListener("change", e => { if (e.target.value.trim()) { s.banner = e.target.value.trim(); render(); } });
+    $("#bGo").addEventListener("click", () => {
+      const k = $("#bSearch").value.trim(); if (!k) return;
+      s.banner = `https://source.unsplash.com/1400x600/?${encodeURIComponent(k)}&t=${Date.now()}`;
+      render();
+    });
+
+    // Save
+    $("#saveBtn").addEventListener("click", () => {
+      s.name = $("#sName").value.trim();
+      s.description = $("#sDesc").value.trim();
+      s.category_ids = $$(".js-cat:checked").map(c => Number(c.value));
+      $$(".js-loc").forEach(inp => s[inp.dataset.f] = inp.value.trim());
+      s.street = $("#sStreet").value.trim();
+      s.phone = $("#sPhone").value.trim();
+      s.email = $("#sEmail").value.trim();
+      // Hours summary
+      const enabledDays = $$(".js-day:checked").map(c => c.dataset.d);
+      const someTimes = enabledDays.length ? `${$(".js-from[data-d='" + enabledDays[0] + "']").value} – ${$(".js-to[data-d='" + enabledDays[0] + "']").value}` : "Closed";
+      s.hours = enabledDays.length === 7 ? someTimes : `${enabledDays.join(", ")}: ${someTimes}`;
+      if (window.DB?.isSupabase && window.DB?.write?.updateStore) {
+        const patch = { name: s.name, description: s.description, category_ids: s.category_ids, division: s.division, district: s.district, upazila: s.upazila, area: s.area, street: s.street, phone: s.phone, hours: s.hours, banner: s.banner };
+        window.DB.write.updateStore(s.id, patch).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+      }
+      appendAuditLog({ action: "UPDATE", entity: "shops", entity_id: s.id, description: `Updated shop details: ${s.name}` });
+      toast("Shop details saved");
+    });
+  }
+  render();
+})();
+</script>
+</body>
+</html>

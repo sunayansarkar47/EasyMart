@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Products — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Products</h1>
+      </div>
+      <button class="btn btn-primary" id="addNew">+ Add new product</button>
+    </div>
+
+    <div class="filter-bar">
+      <div class="field has-icon" style="flex:1;min-width:240px">
+        <span class="leading">🔍</span>
+        <input id="search" class="input" placeholder="Search products by name…">
+      </div>
+      <select class="select" id="catFilter" style="max-width:220px">
+        <option value="">All categories</option>
+      </select>
+      <select class="select" id="storeFilter" style="max-width:220px">
+        <option value="">All my shops</option>
+      </select>
+    </div>
+
+    <div id="prodTable"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["shopkeeper"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("products"); attachSidebarEvents();
+  const myStoreIds = u.store_ids || (u.store_id ? [u.store_id] : []);
+
+  // Init dropdowns
+  $("#catFilter").innerHTML += DATA_CATEGORIES.map(c => `<option value="${c.id}">${c.icon} ${escHTML(c.name)}</option>`).join("");
+  $("#storeFilter").innerHTML += DATA_STORES.filter(s => myStoreIds.includes(s.id)).map(s => `<option value="${s.id}">${escHTML(s.name)}</option>`).join("");
+
+  const STATE = { q: "", cat: "", store: "" };
+
+  function getProducts() {
+    let prods = DATA_PRODUCTS.filter(p => myStoreIds.includes(p.store_id));
+    if (STATE.q)     prods = prods.filter(p => p.name.toLowerCase().includes(STATE.q.toLowerCase()));
+    if (STATE.cat)   prods = prods.filter(p => p.category_id === Number(STATE.cat));
+    if (STATE.store) prods = prods.filter(p => p.store_id === Number(STATE.store));
+    return prods;
+  }
+
+  function render() {
+    const prods = getProducts();
+    if (!prods.length) {
+      $("#prodTable").innerHTML = `<div class="empty card" style="padding:60px"><div class="ic">📦</div><h3 class="font-serif">No products match</h3><p class="muted">Add your first product to get started.</p><button class="btn btn-primary mt-16" onclick="$('#addNew').click()">+ Add product</button></div>`;
+      return;
+    }
+    $("#prodTable").innerHTML = `<div class="table-wrap"><table class="table">
+      <thead><tr><th></th><th>Product</th><th>Category</th><th>Shop</th><th>Price</th><th>Stock</th><th>Status</th><th></th></tr></thead>
+      <tbody>${prods.map(p => {
+        const c = DATA_CATEGORIES.find(c => c.id === p.category_id);
+        const s = DATA_STORES.find(s => s.id === p.store_id);
+        const after = priceAfter(p.price, p.discount);
+        const isLow = p.stock < 5;
+        const isOut = p.stock === 0;
+        const avail = p.available !== false;
+        return `<tr>
+          <td><img src="${escHTML(p.image)}" class="thumb" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=200'"></td>
+          <td><strong>${escHTML(p.name)}</strong><br><span class="muted" style="font-size:.78rem">${escHTML((p.description||"").slice(0,50))}…</span></td>
+          <td>${c ? `${c.icon} ${escHTML(c.name)}` : ""}</td>
+          <td>${escHTML(s?.name || "")}</td>
+          <td><strong class="font-serif txt-green">${fmtBDT(after)}</strong>${p.discount?`<br><span class="discount-badge" style="font-size:.66rem">−${p.discount}%</span>`:""}</td>
+          <td><input type="number" class="input js-stock" data-pid="${p.id}" value="${p.stock}" min="0" style="width:80px;padding:6px 8px;font-weight:700;color:${isOut?"#dc2626":isLow?"var(--orange-500)":"var(--text-1)"}"> ${escHTML(p.unit)}${isLow ? `<br><span class="badge badge-orange" style="font-size:.66rem">${isOut?"Out of stock":"Low"}</span>` : ""}</td>
+          <td>${avail ? `<span class="badge badge-green">Available</span>` : `<span class="badge badge-gray">Hidden</span>`}</td>
+          <td class="actions-cell">
+            <button class="btn btn-secondary btn-sm" onclick="onEdit(${p.id})">Edit</button>
+            <button class="btn btn-ghost btn-sm" onclick="onToggleAvail(${p.id})">${avail?"Hide":"Show"}</button>
+            <button class="btn btn-danger btn-sm" onclick="onDelete(${p.id})">Delete</button>
+          </td>
+        </tr>`;
+      }).join("")}</tbody></table></div>`;
+
+    $$(".js-stock").forEach(inp => inp.addEventListener("change", e => {
+      const pid = Number(inp.dataset.pid);
+      const v = Math.max(0, parseInt(inp.value) || 0);
+      const p = DATA_PRODUCTS.find(x => x.id === pid);
+      if (p) {
+        const before = p.stock;
+        p.stock = v;
+        if (window.DB?.isSupabase && window.DB?.write?.updateProduct) {
+          window.DB.write.updateProduct(pid, { stock: v }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+        }
+        appendAuditLog({ action: "UPDATE", entity: "products", entity_id: pid, description: `Stock updated: ${before} → ${v}`, before:{stock:before}, after:{stock:v} });
+        toast(`${p.name} stock updated to ${v}`);
+        render();
+      }
+    }));
+  }
+
+  // Filters
+  $("#search").addEventListener("input", e => { STATE.q = e.target.value; render(); });
+  $("#catFilter").addEventListener("change", e => { STATE.cat = e.target.value; render(); });
+  $("#storeFilter").addEventListener("change", e => { STATE.store = e.target.value; render(); });
+
+  // Add / Edit
+  function openProductModal(existing) {
+    const myStores = DATA_STORES.filter(s => myStoreIds.includes(s.id));
+    const isEdit = !!existing;
+    const html = `
+      <div class="modal-head"><h3>${isEdit ? "Edit product" : "Add new product"}</h3><button class="modal-close" data-close>×</button></div>
+      <div class="modal-body">
+        <div class="stack">
+          <div class="field"><label>Product name</label><input class="input" id="fName" value="${existing ? escHTML(existing.name) : ""}"></div>
+          <div class="field-row">
+            <div class="field"><label>Category</label><select class="select" id="fCat">${DATA_CATEGORIES.map(c => `<option value="${c.id}" ${existing && existing.category_id===c.id?"selected":""}>${c.icon} ${escHTML(c.name)}</option>`).join("")}</select></div>
+            <div class="field"><label>Shop</label><select class="select" id="fStore">${myStores.map(s => `<option value="${s.id}" ${existing && existing.store_id===s.id?"selected":""}>${escHTML(s.name)}</option>`).join("")}</select></div>
+          </div>
+          <div class="field"><label>Description</label><textarea class="textarea" id="fDesc">${existing ? escHTML(existing.description||"") : ""}</textarea></div>
+          <div class="field-row">
+            <div class="field"><label>Price (৳)</label><input class="input" id="fPrice" type="number" min="0" value="${existing ? existing.price : ""}"></div>
+            <div class="field"><label>Discount (%)</label><input class="input" id="fDisc" type="number" min="0" max="80" value="${existing ? existing.discount : 0}"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Stock</label><input class="input" id="fStock" type="number" min="0" value="${existing ? existing.stock : ""}"></div>
+            <div class="field"><label>Unit</label><select class="select" id="fUnit">${["kg","piece","litre","pack","dozen","bottle","bundle"].map(u => `<option value="${u}" ${existing && existing.unit===u?"selected":""}>${u}</option>`).join("")}</select></div>
+          </div>
+          <div class="field"><label>Product image</label>
+            <div class="upload-grid">
+              <div class="upload-tile"><h5>1. Upload from PC</h5><p class="small">Max 2MB · JPG/PNG/WEBP</p><input type="file" id="upFile" accept="image/*"></div>
+              <div class="upload-tile"><h5>2. Paste image link</h5><p class="small">Any direct image URL</p><input class="input" id="upUrl" placeholder="https://..."></div>
+              <div class="upload-tile"><h5>3. Unsplash search</h5><p class="small">Search for an image</p><div style="display:flex;gap:6px"><input class="input" id="upSearch" placeholder="apples" style="flex:1"><button class="btn btn-secondary btn-sm" id="upGo">Go</button></div></div>
+            </div>
+            <div class="image-preview" id="prevBox">${existing ? `<img src="${escHTML(existing.image)}" onerror="this.parentNode.innerHTML='Preview'">` : "Preview will appear here"}</div>
+            <input type="hidden" id="fImage" value="${existing ? escHTML(existing.image) : ""}">
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot"><button class="btn btn-secondary" data-close>Cancel</button><button class="btn btn-primary" id="saveProd">${isEdit ? "Save changes" : "Add product"}</button></div>`;
+    const { host, close } = openModal(html, { size: "lg" });
+    const setPreview = src => { $("#prevBox", host).innerHTML = `<img src="${escHTML(src)}" onerror="this.parentNode.innerHTML='Preview unavailable'">`; $("#fImage", host).value = src; };
+    $("#upFile", host).addEventListener("change", e => {
+      const f = e.target.files[0]; if (!f) return;
+      if (f.size > 2*1024*1024) { toast("File too large (max 2MB)", "error"); return; }
+      if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { toast("JPG, PNG, or WEBP only", "error"); return; }
+      const r = new FileReader(); r.onload = () => setPreview(r.result); r.readAsDataURL(f);
+    });
+    $("#upUrl", host).addEventListener("input", e => { if (e.target.value.trim()) setPreview(e.target.value.trim()); });
+    $("#upGo", host).addEventListener("click", () => {
+      const k = $("#upSearch", host).value.trim();
+      if (!k) return;
+      const url = `https://source.unsplash.com/400x300/?${encodeURIComponent(k)}&t=${Date.now()}`;
+      setPreview(url);
+    });
+
+    $("#saveProd", host).addEventListener("click", () => {
+      const name = $("#fName", host).value.trim();
+      const price = Number($("#fPrice", host).value);
+      const stock = Number($("#fStock", host).value);
+      if (!name) { toast("Product name is required", "error"); return; }
+      if (!price || price <= 0) { toast("Enter a valid price", "error"); return; }
+      if (stock < 0) { toast("Stock cannot be negative", "error"); return; }
+      const data = {
+        name,
+        category_id: Number($("#fCat", host).value),
+        store_id: Number($("#fStore", host).value),
+        description: $("#fDesc", host).value.trim(),
+        price, stock,
+        discount: Math.max(0, Math.min(80, Number($("#fDisc", host).value) || 0)),
+        unit: $("#fUnit", host).value,
+        image: $("#fImage", host).value || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=600"
+      };
+      if (isEdit) {
+        Object.assign(existing, data);
+        if (window.DB?.isSupabase && window.DB?.write?.updateProduct) {
+          window.DB.write.updateProduct(existing.id, data).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+        }
+        appendAuditLog({ action: "UPDATE", entity: "products", entity_id: existing.id, description: `Updated product: ${name}` });
+        toast("Product updated");
+      } else {
+        const id = Math.max(...DATA_PRODUCTS.map(p => p.id)) + 1;
+        DATA_PRODUCTS.push({ id, ...data, available: true });
+        if (window.DB?.isSupabase && window.DB?.write?.insertProduct) {
+          window.DB.write.insertProduct(data).then(row => {
+            // Replace the temp id with the real one Supabase generated
+            const i = DATA_PRODUCTS.findIndex(p => p.id === id);
+            if (i >= 0) DATA_PRODUCTS[i] = row;
+            render();
+          }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+        }
+        appendAuditLog({ action: "CREATE", entity: "products", entity_id: id, description: `Created product: ${name}` });
+        toast("Product added");
+      }
+      close(); render();
+    });
+  }
+  $("#addNew").addEventListener("click", () => openProductModal(null));
+  window.onEdit = pid => { const p = DATA_PRODUCTS.find(x => x.id === pid); if (p) openProductModal(p); };
+  window.onToggleAvail = pid => {
+    const p = DATA_PRODUCTS.find(x => x.id === pid); if (!p) return;
+    p.available = p.available === false ? true : false;
+    if (window.DB?.isSupabase && window.DB?.write?.updateProduct) {
+      window.DB.write.updateProduct(pid, { available: p.available }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({ action: "UPDATE", entity: "products", entity_id: pid, description: `Set product ${p.available?"visible":"hidden"}: ${p.name}` });
+    toast(p.available ? "Product is now visible" : "Product hidden");
+    render();
+  };
+  window.onDelete = pid => {
+    const p = DATA_PRODUCTS.find(x => x.id === pid); if (!p) return;
+    confirmDialog(`Delete "${p.name}"? This cannot be undone.`, () => {
+      const idx = DATA_PRODUCTS.findIndex(x => x.id === pid);
+      if (idx >= 0) DATA_PRODUCTS.splice(idx, 1);
+      if (window.DB?.isSupabase && window.DB?.write?.deleteProduct) {
+        window.DB.write.deleteProduct(pid).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+      }
+      appendAuditLog({ action: "DELETE", entity: "products", entity_id: pid, description: `Deleted product: ${p.name}` });
+      toast("Product deleted");
+      render();
+    }, { danger: true, confirm: "Delete" });
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

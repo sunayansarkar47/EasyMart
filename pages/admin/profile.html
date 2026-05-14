@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile — EasyMart Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">My profile</h1>
+      </div>
+    </div>
+
+    <!-- Hero card -->
+    <div class="card card-pad fade-up" style="display:flex;gap:22px;align-items:center;padding:28px;background:linear-gradient(135deg, var(--green-700), #166534);color:#fff;border:0;margin-bottom:18px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle at 30% 30%, var(--orange-500), transparent 70%);opacity:.3"></div>
+      <img id="hAvatar" alt="Avatar" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,.25);position:relative">
+      <div style="position:relative;flex:1;min-width:0">
+        <h2 class="display" id="hName" style="color:#fff;margin-bottom:4px"></h2>
+        <p style="color:#bbf7d0;margin-bottom:10px" id="hEmail"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge" id="hRole" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:.82rem;padding:6px 14px"></span>
+          <span class="badge" style="background:rgba(34,197,94,.4);color:#fff;font-size:.82rem;padding:6px 14px">Active</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rg-2col">
+      <!-- Personal info -->
+      <div class="dash-section">
+        <h3>Personal information</h3>
+        <div class="avatar-edit">
+          <img id="avatarPreview" alt="Avatar">
+          <div>
+            <strong id="avatarName"></strong>
+            <p class="muted" style="font-size:.85rem">JPG/PNG · max 2MB</p>
+            <label class="btn btn-secondary btn-sm mt-8">Upload new<input type="file" id="avatarFile" accept="image/*" hidden></label>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="field"><label>Full name</label><input class="input" id="pName"></div>
+          <div class="field-row">
+            <div class="field"><label>Phone</label><input class="input" id="pPhone"></div>
+            <div class="field"><label>Email</label><input class="input" id="pEmail" type="email"></div>
+          </div>
+          <button class="btn btn-primary" id="savePersonal">Save changes</button>
+        </div>
+        <hr class="divider">
+        <h4 class="font-serif" style="font-size:1rem;margin-bottom:10px">Change password</h4>
+        <div class="stack">
+          <div class="field"><label>Current password</label><input class="input" id="oldPass" type="password"></div>
+          <div class="field-row">
+            <div class="field"><label>New password</label><input class="input" id="newPass" type="password"></div>
+            <div class="field"><label>Confirm</label><input class="input" id="newPass2" type="password"></div>
+          </div>
+          <button class="btn btn-secondary" id="changePass">Change password</button>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div>
+        <div class="dash-section">
+          <h3>Activity summary</h3>
+          <div class="rg-3col-tight" style="--gap:10px">
+            <div class="stat-card green" style="padding:14px"><span class="ic">✓</span><div class="label">Actions taken</div><div class="value" style="font-size:1.5rem" id="actionsTaken">0</div></div>
+            <div class="stat-card orange" style="padding:14px"><span class="ic">🚫</span><div class="label">Shops suspended</div><div class="value" style="font-size:1.5rem" id="shopsSuspended">0</div></div>
+            <div class="stat-card blue" style="padding:14px"><span class="ic">⏸</span><div class="label">Ads paused</div><div class="value" style="font-size:1.5rem" id="adsPaused">0</div></div>
+          </div>
+          <hr class="divider">
+          <h4 class="font-serif" style="font-size:1rem;margin-bottom:10px">Recent actions</h4>
+          <div id="recentActions"></div>
+        </div>
+
+        <div class="dash-section">
+          <h3>Notifications</h3>
+          <div class="stack">
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifAlerts" checked> <span><strong>System alerts</strong><br><span class="muted" style="font-size:.82rem">Critical events &amp; flags</span></span></label>
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifReports" checked> <span><strong>Weekly reports</strong><br><span class="muted" style="font-size:.82rem">Platform performance digest</span></span></label>
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifAdmin"> <span><strong>Admin team activity</strong><br><span class="muted" style="font-size:.82rem">Notify when other admins take action</span></span></label>
+          </div>
+        </div>
+
+        <div class="dash-section">
+          <h3>Account</h3>
+          <p class="muted" style="font-size:.88rem"><strong>Member since</strong> <span id="memberSince">—</span></p>
+          <p class="muted" style="font-size:.88rem"><strong>Account ID</strong> <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:.78rem" id="accountId">—</code></p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["admin"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("profile"); attachSidebarEvents();
+
+  // Init
+  $("#hAvatar").src = u.avatar; $("#hAvatar").onerror = () => $("#hAvatar").src = "https://i.pravatar.cc/200?img=20";
+  $("#hName").textContent = u.name;
+  $("#hEmail").textContent = u.email;
+  $("#hRole").textContent = `👑 ${u.role_level || "Admin"}`;
+  $("#avatarPreview").src = u.avatar; $("#avatarPreview").onerror = () => $("#avatarPreview").src = "https://i.pravatar.cc/200?img=20";
+  $("#avatarName").textContent = u.name;
+  $("#pName").value = u.name;
+  $("#pPhone").value = u.phone || "";
+  $("#pEmail").value = u.email;
+  $("#memberSince").textContent = fmtDate(u.created_at || u.joined);
+  $("#accountId").textContent = u.id;
+
+  // Activity counts
+  const myActions = DS.audit().filter(l => l.user_id === u.id);
+  const suspendActions = myActions.filter(l => l.action === "SUSPEND" && l.entity === "shops");
+  const pauseActions = myActions.filter(l => l.action === "UPDATE" && l.entity === "ads" && /pause/i.test(l.description));
+  $("#actionsTaken").textContent = u.actions_taken || myActions.length;
+  $("#shopsSuspended").textContent = u.shops_suspended || suspendActions.length;
+  $("#adsPaused").textContent = u.ads_paused || pauseActions.length;
+  $("#recentActions").innerHTML = myActions.length ? myActions.slice(0, 6).map(l => `<div style="padding:10px 0;border-bottom:1px solid var(--border-2);font-size:.85rem"><strong>${l.action}</strong> · ${escHTML(l.description)}<br><span class="muted" style="font-size:.75rem">${fmtDateTime(l.datetime)}</span></div>`).join("") : `<p class="muted">No actions yet — start exploring the dashboard.</p>`;
+
+  // Avatar upload
+  $("#avatarFile").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 2 * 1024 * 1024) { toast("Image must be under 2MB", "error"); return; }
+    const r = new FileReader();
+    r.onload = () => {
+      $("#avatarPreview").src = r.result;
+      $("#hAvatar").src = r.result;
+      updateCurrentUser({ avatar: r.result });
+      appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Updated profile photo" });
+      toast("Avatar updated");
+    };
+    r.readAsDataURL(f);
+  });
+
+  // Save personal
+  $("#savePersonal").addEventListener("click", () => {
+    const name  = $("#pName").value.trim();
+    const phone = $("#pPhone").value.trim();
+    const email = $("#pEmail").value.trim();
+    if (!name)  { toast("Name is required", "error"); return; }
+    if (!/^\S+@\S+\.\S+$/.test(email)) { toast("Invalid email", "error"); return; }
+    updateCurrentUser({ name, phone, email });
+    appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Updated personal information" });
+    toast("Profile saved");
+    $("#avatarName").textContent = name;
+    $("#hName").textContent = name;
+    $("#hEmail").textContent = email;
+  });
+
+  // Change password
+  $("#changePass").addEventListener("click", async () => {
+    const old = $("#oldPass").value;
+    const np  = $("#newPass").value;
+    const np2 = $("#newPass2").value;
+    if (!old) { toast("Enter your current password", "error"); return; }
+    if (np.length < 6) { toast("New password must be at least 6 characters", "error"); return; }
+    if (np !== np2) { toast("Passwords don't match", "error"); return; }
+
+    if (window.DB?.isSupabase && window.DB?.write?.signIn) {
+      try { await window.DB.write.signIn(u.email, old); }
+      catch (err) { toast("Current password is incorrect", "error"); return; }
+      try { await window.DB.write.updateUser(u.id, { password: np }); }
+      catch (err) { toast("Failed to change password: " + err.message, "error"); return; }
+      appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Changed password" });
+      toast("Password changed");
+      $("#oldPass").value = $("#newPass").value = $("#newPass2").value = "";
+      return;
+    }
+    const me = DATA_USERS.find(x => x.id === u.id);
+    if (me) {
+      if (me.password && me.password !== old) { toast("Current password is incorrect", "error"); return; }
+      me.password = np;
+    }
+    appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Changed password" });
+    toast("Password changed");
+    $("#oldPass").value = $("#newPass").value = $("#newPass2").value = "";
+  });
+
+  ["notifAlerts", "notifReports", "notifAdmin"].forEach(id => {
+    $("#" + id).addEventListener("change", () => toast("Notification preferences saved"));
+  });
+})();
+</script>
+</body>
+</html>

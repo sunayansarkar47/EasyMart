@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Shop — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">My shop</h1>
+      </div>
+      <select id="storePicker" class="select" style="min-width:240px"></select>
+    </div>
+    <div id="shopContent"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["shopkeeper"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("my-shop"); attachSidebarEvents();
+
+  const myStoreIds = u.store_ids || (u.store_id ? [u.store_id] : []);
+  const myStores = DATA_STORES.filter(s => myStoreIds.includes(s.id));
+  if (!myStores.length) {
+    $("#shopContent").innerHTML = `<div class="empty card" style="padding:60px"><div class="ic">🏪</div><h3>No shops yet</h3><p class="muted">Set up your shop in Shop Details to start selling.</p><a href="shop-details.html" class="btn btn-primary mt-16">Set up shop</a></div>`;
+    return;
+  }
+  $("#storePicker").innerHTML = myStores.map(s => `<option value="${s.id}">${escHTML(s.name)}</option>`).join("");
+  let currentId = myStores[0].id;
+  $("#storePicker").addEventListener("change", e => { currentId = Number(e.target.value); render(); });
+
+  function render() {
+    const s = DATA_STORES.find(x => x.id === currentId);
+    const products = DATA_PRODUCTS.filter(p => p.store_id === currentId);
+    const orders = DS.orders().filter(o => o.store_id === currentId);
+    const revenueMonth = orders.filter(o => o.status === "delivered" || o.status === "Delivered").reduce((sum, o) => sum + o.total, 0);
+    const reviewedOrders = orders.filter(o => o.review).map(o => o.review.rating);
+    const avgRating = reviewedOrders.length ? (reviewedOrders.reduce((a,b)=>a+b,0)/reviewedOrders.length).toFixed(1) : s.rating;
+
+    $("#shopContent").innerHTML = `
+      <div class="shop-banner-wrap fade-up">
+        <img src="${escHTML(s.banner || s.image)}" alt="${escHTML(s.name)}" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1400'">
+        <div class="banner-overlay">
+          <div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+              ${(s.category_ids||[]).slice(0,3).map(cid => { const c = DATA_CATEGORIES.find(c=>c.id===cid); return c ? `<span class="badge" style="background:rgba(255,255,255,.2);color:#fff;backdrop-filter:blur(8px)">${c.icon} ${escHTML(c.name)}</span>` : ""; }).join("")}
+            </div>
+            <h2 class="display" style="color:#fff;margin-bottom:6px">${escHTML(s.name)}</h2>
+            <p style="color:#d1fae5;max-width:600px">${escHTML(s.description||"")}</p>
+            <div style="display:flex;gap:14px;margin-top:14px;color:#fff;flex-wrap:wrap">
+              <span><strong style="color:#fbbf24">★ ${avgRating}</strong> · ${s.reviews_count||s.reviews||0} reviews</span>
+              <span>📍 ${escHTML(s.area)}, ${escHTML(s.upazila)}</span>
+              <span>📞 ${escHTML(s.phone)}</span>
+              <span>🕒 ${escHTML(s.hours)}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <a href="shop-details.html" class="btn btn-accent">Edit shop</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-grid mt-24">
+        <div class="stat-card green fade-up"><span class="ic">📦</span><div class="label">Total products</div><div class="value">${products.length}</div><div class="delta up">${products.filter(p=>p.discount>0).length} on sale</div></div>
+        <div class="stat-card orange fade-up"><span class="ic">🛒</span><div class="label">Total orders</div><div class="value">${orders.length}</div><div class="delta">${orders.filter(o=>String(o.status).toLowerCase()==="delivered").length} delivered</div></div>
+        <div class="stat-card blue fade-up"><span class="ic">💰</span><div class="label">Revenue this month</div><div class="value">${fmtBDT(revenueMonth)}</div><div class="delta up">+18% vs last month</div></div>
+        <div class="stat-card violet fade-up"><span class="ic">⭐</span><div class="label">Avg rating</div><div class="value">${avgRating}</div><div class="delta">across ${reviewedOrders.length||s.reviews_count||0} reviews</div></div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Your products <a href="products.html" class="btn btn-secondary btn-sm">Manage products →</a></h3>
+        ${products.length ? `<div class="product-grid">${products.slice(0, 8).map(p => productCard(p)).join("")}</div>` :
+          `<div class="empty"><div class="ic">📦</div><h3>No products yet</h3><p class="muted">Add your first product to start selling.</p><a href="products.html" class="btn btn-primary mt-16">Add product</a></div>`}
+      </div>`;
+  }
+  render();
+})();
+</script>
+<style>
+  .shop-banner-wrap { position: relative; height: 280px; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow); }
+  .shop-banner-wrap img { width: 100%; height: 100%; object-fit: cover; }
+  .banner-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.1) 30%, rgba(0,0,0,.75)); display: flex; flex-direction: column; justify-content: flex-end; padding: 28px; gap: 14px; }
+  @media (max-width: 768px) { .shop-banner-wrap { height: 360px; } .banner-overlay { padding: 18px; } }
+</style>
+</body>
+</html>

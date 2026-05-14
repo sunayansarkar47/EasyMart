@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-depth="1">
+<div id="floatingToggle"></div>
+<div class="auth-shell">
+  <aside class="auth-art">
+    <a href="../index.html" class="brand"><span class="dot"></span><span class="easy">Easy</span><span class="mart">Mart</span></a>
+    <div>
+      <h2>Welcome back to your <em>local market</em>.</h2>
+      <p>Pick up where you left off — your basket, your favorite shops, your coins, all waiting for you.</p>
+      <div class="testimonial">
+        <p>"I order from FreshKart every Tuesday morning. The apples are always ripe and they remember my address."</p>
+        <div class="author">
+          <img src="https://i.pravatar.cc/200?img=12" alt="Rafiq" onerror="this.src='https://i.pravatar.cc/200?img=1'">
+          <div><strong>Rafiq Hasan</strong><br><span>Dhanmondi 27 · 124 orders</span></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:.82rem;opacity:.6">© 2026 EasyMart · Built with care in Dhaka</p>
+  </aside>
+
+  <main class="auth-form-wrap">
+    <form class="auth-form" id="loginForm" novalidate>
+      <a href="../index.html" class="back-link">← Back to homepage</a>
+      <h1 class="display">Log in</h1>
+      <p class="sub">Sign in with your email and password.</p>
+
+      <div class="stack">
+        <div class="field">
+          <label for="email">Email address</label>
+          <input class="input" id="email" type="email" placeholder="you@example.com" required autocomplete="email">
+          <span class="err" id="emailErr" hidden></span>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input class="input" id="password" type="password" placeholder="••••••••" required autocomplete="current-password">
+          <span class="err" id="passErr" hidden></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Log in</button>
+      </div>
+
+      <p class="form-foot">No account yet? <a href="register.html">Create one →</a></p>
+    </form>
+  </main>
+</div>
+
+<script src="../config.js"></script>
+<script src="../js/data.js"></script>
+<script src="../lib/supabase.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/app.js"></script>
+<script>
+(function(){
+  // Inject floating theme toggle
+  $("#floatingToggle").innerHTML = themeToggleBtn("floating");
+
+  $("#loginForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = $("#email").value.trim();
+    const pass  = $("#password").value;
+    let ok = true;
+    if (!/^\S+@\S+\.\S+$/.test(email)) { $("#emailErr").textContent = "Enter a valid email"; $("#emailErr").hidden = false; ok = false; }
+    else { $("#emailErr").hidden = true; }
+    if (pass.length < 6) { $("#passErr").textContent = "Password is too short"; $("#passErr").hidden = false; ok = false; }
+    else { $("#passErr").hidden = true; }
+    if (!ok) return;
+
+    // Wait for Supabase boot loader to finish if applicable
+    if (window.DB?.ready) await window.DB.ready;
+
+    // Path A: Supabase configured — table-based login
+    if (window.DB?.isSupabase && window.DB?.write?.signIn) {
+      try {
+        const user = await window.DB.write.signIn(email, pass);
+        const safe = { ...user }; delete safe.password;
+        if (safe.type === "customer") {
+          const last = DS.coins().filter(c => c.customer_id === safe.id).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+          if (last) safe.coins = last.balance;
+          safe.tier = computeTier(safe.coins || 0);
+        }
+        localStorage.setItem("em_user", JSON.stringify(safe));
+        appendAuditLog({ action: "LOGIN", entity: "users", entity_id: safe.id, description: `${safe.type} logged in: ${safe.name}` });
+        if (safe.type === "customer") grantDailyLoginBonus(safe.id);
+        toast("Welcome back, " + safe.name.split(" ")[0]);
+        setTimeout(() => location.href = "dashboard.html", 600);
+        return;
+      } catch (err) {
+        toast(err.message || "Sign-in failed", "error");
+        return;
+      }
+    }
+
+    // Path B: demo mode — look up purely by email + password in data.js
+    const u = DATA_USERS.find(x => x.email.toLowerCase() === email.toLowerCase());
+    if (!u || pass !== u.password) {
+      toast("No account matches those credentials.", "error");
+      return;
+    }
+    const safe = { ...u }; delete safe.password;
+    if (safe.type === "customer") {
+      const last = DS.coins().filter(c => c.customer_id === safe.id).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+      if (last) safe.coins = last.balance;
+      safe.tier = computeTier(safe.coins || 0);
+    }
+    localStorage.setItem("em_user", JSON.stringify(safe));
+    appendAuditLog({ action: "LOGIN", entity: "users", entity_id: safe.id, description: `${safe.type} logged in: ${safe.name}` });
+    if (safe.type === "customer") grantDailyLoginBonus(safe.id);
+    toast("Welcome back, " + safe.name.split(" ")[0]);
+    setTimeout(() => location.href = "dashboard.html", 600);
+  });
+})();
+</script>
+
+</body>
+</html>

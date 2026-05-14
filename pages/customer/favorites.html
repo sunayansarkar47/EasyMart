@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Favorites — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Favorites</h1>
+      </div>
+    </div>
+
+    <div class="tabs mb-20" id="favTabs">
+      <button class="active" data-t="products">Favorite products <span class="muted" id="cntP">0</span></button>
+      <button data-t="stores">Favorite stores <span class="muted" id="cntS">0</span></button>
+    </div>
+
+    <div id="favContent"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["customer"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("favorites"); attachSidebarEvents();
+  let tab = "products";
+
+  function render() {
+    const f = favsGet();
+    $("#cntP").textContent = `(${f.products.length})`;
+    $("#cntS").textContent = `(${f.stores.length})`;
+    if (tab === "products") {
+      const prods = f.products.map(id => DATA_PRODUCTS.find(p => p.id === id)).filter(Boolean);
+      $("#favContent").innerHTML = prods.length ? `<div class="product-grid">${prods.map(p => productCard(p)).join("")}</div>` :
+        `<div class="empty card" style="padding:60px 24px"><div class="ic">❤️</div><h3 class="font-serif">No favorite products yet</h3><p class="muted">Tap the heart on any product to save it here.</p><a href="../../index.html" class="btn btn-primary mt-16">Browse products</a></div>`;
+    } else {
+      const stores = f.stores.map(id => DATA_STORES.find(s => s.id === id)).filter(Boolean);
+      $("#favContent").innerHTML = stores.length ? `<div class="store-grid">${stores.map(s => `
+        <div class="store-card fade-up">
+          ${storeCard(s).replace('class="store-card fade-up"', 'class="store-card-inner"')}
+          <div style="padding:0 18px 18px"><button class="btn btn-secondary btn-sm btn-block" onclick="onUnfavStore(${s.id})">Remove from favorites</button></div>
+        </div>`).join("")}</div>` :
+        `<div class="empty card" style="padding:60px 24px"><div class="ic">🏪</div><h3 class="font-serif">No favorite stores yet</h3><p class="muted">Save shops you love so they're easier to find.</p><a href="../../index.html" class="btn btn-primary mt-16">Browse stores</a></div>`;
+    }
+  }
+  $$("#favTabs button").forEach(b => b.addEventListener("click", () => {
+    $$("#favTabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    tab = b.dataset.t; render();
+  }));
+  window.onUnfavStore = (id) => { favStoreToggle(id); toast("Removed from favorites"); render(); };
+
+  // Override default favProdToggle so we re-render after toggle
+  const origFav = window.onCardFav;
+  window.onCardFav = function(btn, id) { origFav(btn, id); setTimeout(render, 200); };
+
+  render();
+})();
+</script>
+</body>
+</html>

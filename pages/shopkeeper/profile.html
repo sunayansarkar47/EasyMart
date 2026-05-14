@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile — EasyMart Shopkeeper</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">My profile</h1>
+      </div>
+    </div>
+
+    <!-- Hero card -->
+    <div class="card card-pad fade-up" style="display:flex;gap:22px;align-items:center;padding:28px;background:linear-gradient(135deg, var(--green-700), #166534);color:#fff;border:0;margin-bottom:18px;position:relative;overflow:hidden">
+      <div style="position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle at 30% 30%, var(--orange-500), transparent 70%);opacity:.3"></div>
+      <img id="hAvatar" alt="Avatar" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,.25);position:relative">
+      <div style="position:relative;flex:1;min-width:0">
+        <h2 class="display" id="hName" style="color:#fff;margin-bottom:4px"></h2>
+        <p style="color:#bbf7d0;margin-bottom:10px" id="hEmail"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:.82rem;padding:6px 14px">🏪 Shopkeeper</span>
+          <span class="badge" id="hShopCount" style="background:rgba(34,197,94,.4);color:#fff;font-size:.82rem;padding:6px 14px"></span>
+          <span class="badge" style="background:rgba(34,197,94,.4);color:#fff;font-size:.82rem;padding:6px 14px">Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="stat-grid mb-20" id="quickStats"></div>
+
+    <div class="rg-2col">
+      <!-- Personal info -->
+      <div class="dash-section">
+        <h3>Personal information</h3>
+        <div class="avatar-edit">
+          <img id="avatarPreview" alt="Avatar">
+          <div>
+            <strong id="avatarName"></strong>
+            <p class="muted" style="font-size:.85rem">JPG/PNG · max 2MB</p>
+            <label class="btn btn-secondary btn-sm mt-8">Upload new<input type="file" id="avatarFile" accept="image/*" hidden></label>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="field"><label>Full name</label><input class="input" id="pName"></div>
+          <div class="field-row">
+            <div class="field"><label>Phone</label><input class="input" id="pPhone"></div>
+            <div class="field"><label>Email</label><input class="input" id="pEmail" type="email"></div>
+          </div>
+          <button class="btn btn-primary" id="savePersonal">Save changes</button>
+        </div>
+        <hr class="divider">
+        <h4 class="font-serif" style="font-size:1rem;margin-bottom:10px">Change password</h4>
+        <div class="stack">
+          <div class="field"><label>Current password</label><input class="input" id="oldPass" type="password"></div>
+          <div class="field-row">
+            <div class="field"><label>New password</label><input class="input" id="newPass" type="password"></div>
+            <div class="field"><label>Confirm</label><input class="input" id="newPass2" type="password"></div>
+          </div>
+          <button class="btn btn-secondary" id="changePass">Change password</button>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div>
+        <div class="dash-section">
+          <h3>Your shops</h3>
+          <div id="shopsList"></div>
+        </div>
+
+        <div class="dash-section">
+          <h3>Notifications</h3>
+          <div class="stack">
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifOrders" checked> <span><strong>New orders</strong><br><span class="muted" style="font-size:.82rem">Real-time alerts when customers place orders</span></span></label>
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifLowStock" checked> <span><strong>Low stock alerts</strong><br><span class="muted" style="font-size:.82rem">When a product drops below 5 units</span></span></label>
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifReviews" checked> <span><strong>New reviews</strong><br><span class="muted" style="font-size:.82rem">When customers rate your shop</span></span></label>
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifReports"> <span><strong>Weekly performance digest</strong><br><span class="muted" style="font-size:.82rem">Summary of sales, traffic, and top products</span></span></label>
+          </div>
+        </div>
+
+        <div class="dash-section">
+          <h3>Account</h3>
+          <p class="muted" style="font-size:.88rem"><strong>Member since</strong> <span id="memberSince">—</span></p>
+          <p class="muted" style="font-size:.88rem"><strong>Account ID</strong> <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:.78rem" id="accountId">—</code></p>
+          <hr class="divider">
+          <button class="btn btn-danger" id="deleteAcc">Close my shopkeeper account</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["shopkeeper"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("profile"); attachSidebarEvents();
+
+  const myStoreIds = u.store_ids || (u.store_id ? [u.store_id] : []);
+  const myStores   = DATA_STORES.filter(s => myStoreIds.includes(s.id));
+  const myProducts = DATA_PRODUCTS.filter(p => myStoreIds.includes(p.store_id));
+  const myOrders   = DS.orders().filter(o => myStoreIds.includes(o.store_id));
+
+  // Hero
+  $("#hAvatar").src = u.avatar; $("#hAvatar").onerror = () => $("#hAvatar").src = "https://i.pravatar.cc/200?img=33";
+  $("#hName").textContent = u.name;
+  $("#hEmail").textContent = u.email;
+  $("#hShopCount").textContent = `${myStores.length} ${myStores.length === 1 ? "shop" : "shops"}`;
+
+  // Personal info form prefill
+  $("#avatarPreview").src = u.avatar; $("#avatarPreview").onerror = () => $("#avatarPreview").src = "https://i.pravatar.cc/200?img=33";
+  $("#avatarName").textContent = u.name;
+  $("#pName").value = u.name;
+  $("#pPhone").value = u.phone || "";
+  $("#pEmail").value = u.email;
+  $("#memberSince").textContent = fmtDate(u.created_at || u.joined);
+  $("#accountId").textContent = u.id;
+
+  // Quick stats
+  const totalRevenue = myOrders.filter(o => String(o.status).toLowerCase() === "delivered").reduce((s, o) => s + (o.total || 0), 0);
+  const reviewedOrders = myOrders.filter(o => o.review).map(o => o.review.rating);
+  const avgRating = reviewedOrders.length
+    ? (reviewedOrders.reduce((a, b) => a + b, 0) / reviewedOrders.length).toFixed(1)
+    : (myStores.length ? (myStores.reduce((s, st) => s + (st.rating || 0), 0) / myStores.length).toFixed(1) : "—");
+  const totalReviews = myStores.reduce((s, st) => s + (st.reviews_count || st.reviews || 0), 0);
+  $("#quickStats").innerHTML = `
+    <div class="stat-card green fade-up"><span class="ic">🏪</span><div class="label">Shops owned</div><div class="value">${myStores.length}</div><div class="delta up">all active</div></div>
+    <div class="stat-card orange fade-up"><span class="ic">📦</span><div class="label">Total products</div><div class="value">${myProducts.length}</div><div class="delta up">${myProducts.filter(p => p.discount > 0).length} on sale</div></div>
+    <div class="stat-card blue fade-up"><span class="ic">💰</span><div class="label">Lifetime revenue</div><div class="value">${fmtBDT(totalRevenue)}</div><div class="delta up">from ${myOrders.length} orders</div></div>
+    <div class="stat-card violet fade-up"><span class="ic">⭐</span><div class="label">Avg rating</div><div class="value">${avgRating}</div><div class="delta">${fmtNum(totalReviews)} reviews</div></div>`;
+
+  // Shops list
+  $("#shopsList").innerHTML = myStores.length ? myStores.map(s => `
+    <a href="my-shop.html" class="row gap-12" style="padding:12px;border-radius:10px;background:var(--surface-2);text-decoration:none;color:inherit;margin-bottom:8px;display:flex;transition:background .15s" onmouseover="this.style.background='var(--green-50)'" onmouseout="this.style.background='var(--surface-2)'">
+      <img src="${escHTML(s.image)}" style="width:48px;height:48px;border-radius:8px;object-fit:cover" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=200'">
+      <div style="flex:1;min-width:0">
+        <strong style="display:block">${escHTML(s.name)}</strong>
+        <span class="muted" style="font-size:.78rem">📍 ${escHTML(s.upazila)} · ★ ${s.rating}</span>
+      </div>
+      <span style="color:var(--text-3)">›</span>
+    </a>`).join("") : `<p class="muted">You don't own any shops yet. <a href="shop-details.html">Set one up →</a></p>`;
+
+  // Avatar upload
+  $("#avatarFile").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 2 * 1024 * 1024) { toast("Image must be under 2MB", "error"); return; }
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { toast("JPG, PNG, or WEBP only", "error"); return; }
+    const r = new FileReader();
+    r.onload = () => {
+      $("#avatarPreview").src = r.result;
+      $("#hAvatar").src = r.result;
+      updateCurrentUser({ avatar: r.result });
+      appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Updated profile photo" });
+      toast("Avatar updated");
+    };
+    r.readAsDataURL(f);
+  });
+
+  // Save personal
+  $("#savePersonal").addEventListener("click", () => {
+    const name  = $("#pName").value.trim();
+    const phone = $("#pPhone").value.trim();
+    const email = $("#pEmail").value.trim();
+    if (!name)  { toast("Name is required", "error"); return; }
+    if (!/^\S+@\S+\.\S+$/.test(email)) { toast("Invalid email", "error"); return; }
+    updateCurrentUser({ name, phone, email });
+    appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Updated personal information" });
+    toast("Profile saved");
+    $("#avatarName").textContent = name;
+    $("#hName").textContent = name;
+    $("#hEmail").textContent = email;
+  });
+
+  // Change password
+  $("#changePass").addEventListener("click", async () => {
+    const old = $("#oldPass").value;
+    const np  = $("#newPass").value;
+    const np2 = $("#newPass2").value;
+    if (!old) { toast("Enter your current password", "error"); return; }
+    if (np.length < 6) { toast("New password must be at least 6 characters", "error"); return; }
+    if (np !== np2) { toast("Passwords don't match", "error"); return; }
+
+    if (window.DB?.isSupabase && window.DB?.write?.signIn) {
+      try { await window.DB.write.signIn(u.email, old); }
+      catch (err) { toast("Current password is incorrect", "error"); return; }
+      try { await window.DB.write.updateUser(u.id, { password: np }); }
+      catch (err) { toast("Failed to change password: " + err.message, "error"); return; }
+      appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Changed password" });
+      toast("Password changed");
+      $("#oldPass").value = $("#newPass").value = $("#newPass2").value = "";
+      return;
+    }
+    const me = DATA_USERS.find(x => x.id === u.id);
+    if (me) {
+      if (me.password && me.password !== old) { toast("Current password is incorrect", "error"); return; }
+      me.password = np;
+    }
+    appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Changed password" });
+    toast("Password changed");
+    $("#oldPass").value = $("#newPass").value = $("#newPass2").value = "";
+  });
+
+  // Notification toggles
+  ["notifOrders", "notifLowStock", "notifReviews", "notifReports"].forEach(id => {
+    $("#" + id).addEventListener("change", () => toast("Notification preferences saved"));
+  });
+
+  // Delete / close account
+  $("#deleteAcc").addEventListener("click", () => {
+    const html = `
+    <div class="modal-head"><h3>Close shopkeeper account</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <p>Closing your account will <strong>permanently remove your shops, products, and ad campaigns.</strong> Customer order history will be retained for record-keeping. To confirm, type <code>CLOSE</code> below.</p>
+      <div class="field mt-16"><input class="input" id="delConfirm" placeholder="Type CLOSE"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary" data-close>Cancel</button><button class="btn btn-danger" id="confirmDel">Close account</button></div>`;
+    const { host, close } = openModal(html);
+    $("#confirmDel", host).addEventListener("click", () => {
+      if ($("#delConfirm", host).value.trim() !== "CLOSE") { toast("Please type CLOSE to confirm", "error"); return; }
+      appendAuditLog({ action: "DELETE", entity: "users", entity_id: u.id, description: "Shopkeeper account closure requested" });
+      localStorage.removeItem("em_user");
+      close();
+      toast("Account closed. Goodbye 👋");
+      setTimeout(() => location.href = "../../index.html", 800);
+    });
+  });
+})();
+</script>
+</body>
+</html>

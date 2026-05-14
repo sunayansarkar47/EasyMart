@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-depth="1">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle" aria-label="Open menu">☰</button>
+        <h1 class="display" id="greeting">Dashboard</h1>
+      </div>
+      <button class="loc-chip js-loc" type="button" id="locChip">
+        <span class="pin">📍</span><strong id="locArea">—</strong> <span class="muted">·</span> <span class="muted" id="locUpazila">—</span>
+      </button>
+    </div>
+
+    <!-- Ad slider -->
+    <div id="dashSlider" style="margin-bottom:24px"></div>
+
+    <!-- Stats -->
+    <div class="stat-grid" id="statCards"></div>
+
+    <!-- Two-column section -->
+    <div class="chart-row">
+      <div class="dash-section" id="sectionA"></div>
+      <div class="dash-section" id="sectionB"></div>
+    </div>
+  </main>
+</div>
+
+<script src="../config.js"></script>
+<script src="../js/data.js"></script>
+<script src="../lib/supabase.js"></script>
+<script src="../js/db.js"></script>
+<script src="../js/app.js"></script>
+<script src="../js/dashboard.js"></script>
+<script>
+(function(){
+  const loc = locGet();
+  $("#locArea").textContent = loc.area || "Set location";
+  $("#locUpazila").textContent = loc.upazila || "";
+  dashboardInit();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EasyMart — Local Marketplace, Delivered Fresh</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="EasyMart is a neighborhood marketplace for Dhaka — fresh groceries, bakeries, pharmacies, and more, delivered from shops near you.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-depth="0">
+
+<div id="navHost"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-left">
+        <span class="eyebrow">Bangladesh's neighborhood marketplace</span>
+        <h1 class="display">Fresh, local, &amp; <em>delivered</em><br>from shops <span class="underline">near you</span>.</h1>
+        <p class="lead">From Dhanmondi's morning produce to Bashundhara's late-night cravings — discover real shops in your area and get them delivered in minutes.</p>
+        <div class="hero-search" role="search">
+          <input id="heroSearch" type="text" placeholder="Search 1,200+ products from local shops…" aria-label="Search products">
+          <button class="btn btn-primary" id="heroSearchBtn">Search</button>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><strong id="statShops">15</strong><span>local shops</span></div>
+          <div class="stat"><strong id="statProducts">60+</strong><span>fresh products</span></div>
+          <div class="stat"><strong>15 min</strong><span>avg delivery</span></div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="hero-collage">
+          <div><img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80" alt="Fresh produce" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800'"></div>
+          <div><img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600&q=80" alt="Coffee shop" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800'"></div>
+          <div><img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80" alt="Burger" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800'"></div>
+          <div><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80" alt="Bakery" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=800'"></div>
+        </div>
+        <div class="hero-tag t1"><span class="dot"></span>Live · 47 orders right now</div>
+        <div class="hero-tag t2">⭐ 4.8 / 5 customer rating</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CATEGORIES -->
+<section class="section section-tight">
+  <div class="container">
+    <div class="row-between mb-16">
+      <div>
+        <span class="eyebrow">Shop by category</span>
+        <h2 class="display" style="margin-top:6px">Everything your neighbourhood needs</h2>
+      </div>
+    </div>
+    <div class="cat-grid" id="catGrid"></div>
+  </div>
+</section>
+
+<!-- AD SLIDER -->
+<section class="section-tight">
+  <div class="container"><div id="adSlider"></div></div>
+</section>
+
+<!-- PROMO BANNERS -->
+<section class="section-tight">
+  <div class="container">
+    <div class="promo-grid">
+      <div class="promo-card">
+        <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&q=80" alt="Fresh produce" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1200'">
+        <div class="promo-overlay">
+          <span class="eyebrow" style="color:#bbf7d0">Daily fresh</span>
+          <h4>Morning produce, delivered before noon</h4>
+          <a href="?cat=1" class="btn-shop">Shop Fresh</a>
+        </div>
+      </div>
+      <div class="promo-card">
+        <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=1200&q=80" alt="Coffee" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1200'">
+        <div class="promo-overlay">
+          <span class="eyebrow" style="color:#bbf7d0">Coffee &amp; bakes</span>
+          <h4>Slow-bakery, fast delivery</h4>
+          <a href="?cat=7" class="btn-shop">Order Now</a>
+        </div>
+      </div>
+      <div class="promo-card">
+        <img src="https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=1200&q=80" alt="Beauty" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1200'">
+        <div class="promo-overlay">
+          <span class="eyebrow" style="color:#bbf7d0">Glow up</span>
+          <h4>Up to 30% off skincare</h4>
+          <a href="?cat=11" class="btn-shop">Shop Beauty</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOP DEALS -->
+<section class="section">
+  <div class="container">
+    <div class="row-between mb-20">
+      <div>
+        <span class="eyebrow">Top deals</span>
+        <h2 class="display">Best discounts <em style="color:var(--orange-500)">near you</em></h2>
+      </div>
+    </div>
+    <div class="product-grid" id="topDeals"></div>
+  </div>
+</section>
+
+<!-- NEARBY STORES -->
+<section class="section bg-green-50" style="background:linear-gradient(180deg, #fbfdf8, #f0fdf4)">
+  <div class="container">
+    <div class="row-between mb-20">
+      <div>
+        <span class="eyebrow">Nearby stores</span>
+        <h2 class="display">Shops in <em id="locDisplay">your area</em></h2>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="showAllStores">Show all stores</button>
+    </div>
+    <div id="storeMessage"></div>
+    <div class="store-grid" id="nearbyStores"></div>
+  </div>
+</section>
+
+<!-- FEATURED PRODUCTS -->
+<section class="section">
+  <div class="container">
+    <div class="row-between mb-20">
+      <div>
+        <span class="eyebrow">Featured</span>
+        <h2 class="display">Popular this week</h2>
+      </div>
+    </div>
+    <div class="product-grid" id="featuredProducts"></div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="container">
+    <div class="text-center mb-24">
+      <span class="eyebrow">How EasyMart works</span>
+      <h2 class="display" style="margin-top:6px">Three steps to a fresher day</h2>
+    </div>
+    <div class="rg-3col">
+      <div class="how-step fade-up"><span class="num">01</span><div class="ic">📍</div><h4>Set your area</h4><p>Tell us where you are. We surface shops within walking distance first.</p></div>
+      <div class="how-step fade-up"><span class="num">02</span><div class="ic">🛒</div><h4>Pick your basket</h4><p>Browse 60+ products from real local shops, with same-day pricing and stock.</p></div>
+      <div class="how-step fade-up"><span class="num">03</span><div class="ic">🚲</div><h4>Get it delivered</h4><p>Choose home delivery or store pickup. Earn coins on every order.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee">
+  <div class="marquee-track">
+    <span><span class="dot">●</span> Fresh hilsa fish from Padma — limited stock today</span>
+    <span><span class="dot">●</span> 20% off all Kalabagan Ice Cream tubs this weekend</span>
+    <span><span class="dot">●</span> Free home delivery on orders above ৳500</span>
+    <span><span class="dot">●</span> Earn coins on every order — redeem 100 coins for ৳10 off</span>
+    <span><span class="dot">●</span> Open 24/7 — Uttara Pharmacy delivers any time of night</span>
+    <!-- duplicated for seamless scroll -->
+    <span><span class="dot">●</span> Fresh hilsa fish from Padma — limited stock today</span>
+    <span><span class="dot">●</span> 20% off all Kalabagan Ice Cream tubs this weekend</span>
+    <span><span class="dot">●</span> Free home delivery on orders above ৳500</span>
+    <span><span class="dot">●</span> Earn coins on every order — redeem 100 coins for ৳10 off</span>
+    <span><span class="dot">●</span> Open 24/7 — Uttara Pharmacy delivers any time of night</span>
+  </div>
+</div>
+
+<div id="footerHost"></div>
+
+<!-- Scripts -->
+<script src="config.js"></script>
+<script src="js/data.js"></script>
+<script src="lib/supabase.js"></script>
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+<script>
+(function(){
+  // Inject navbar + footer
+  $("#navHost").innerHTML = renderPublicNavbar();
+  $("#footerHost").innerHTML = renderFooter();
+  attachNavbarEvents();
+  cartUpdateBadge();
+
+  // Update hero stats
+  $("#statShops").textContent = DATA_STORES.length;
+  $("#statProducts").textContent = DATA_PRODUCTS.length + "+";
+
+  // Categories
+  $("#catGrid").innerHTML = DATA_CATEGORIES.map(categoryCard).join("");
+
+  // Ad slider — admin top-deals (featured) + active ads
+  const featured = DS.ads().filter(a => a.featured_in_top_deals && (a.status||"").toLowerCase()==="active");
+  const sliderAds = featured.length ? featured : getActiveAds();
+  renderSlider($("#adSlider"), sliderAds);
+
+  // Search params
+  const params = new URLSearchParams(location.search);
+  const catFilter = params.get("cat") ? Number(params.get("cat")) : null;
+  const qFilter   = params.get("q") || "";
+  if (qFilter) $("#heroSearch").value = qFilter;
+
+  const loc = locGet();
+  $("#locDisplay").textContent = loc.area || "your area";
+
+  // Top deals — products with highest discount, location-ranked, optional category
+  let deals = DATA_PRODUCTS.filter(p => p.discount > 0);
+  if (catFilter) deals = deals.filter(p => p.category_id === catFilter);
+  if (qFilter)   deals = deals.filter(p => p.name.toLowerCase().includes(qFilter.toLowerCase()));
+  deals = rankProducts(deals, loc).sort((a,b)=>(b.discount||0)-(a.discount||0)).slice(0, 8);
+  $("#topDeals").innerHTML = deals.length ? deals.map(p => productCard(p)).join("") :
+    `<div class="empty" style="grid-column:1/-1"><div class="ic">🔍</div><h3>No deals match</h3><p class="muted">Try a different search or category.</p></div>`;
+
+  // Nearby stores
+  let stores = DATA_STORES.slice();
+  if (catFilter) stores = stores.filter(s => (s.category_ids||[]).includes(catFilter));
+  if (qFilter)   stores = stores.filter(s => s.name.toLowerCase().includes(qFilter.toLowerCase()) || s.description.toLowerCase().includes(qFilter.toLowerCase()));
+  let ranked = rankStores(stores, loc);
+  let nearby = ranked.filter(s => s._score < 5);
+  let showingAll = false;
+
+  function renderStores() {
+    const list = showingAll ? ranked : (nearby.length ? nearby : ranked);
+    $("#nearbyStores").innerHTML = list.length ? list.slice(0, 6).map(storeCard).join("") :
+      `<div class="empty" style="grid-column:1/-1"><div class="ic">🏪</div><h3>No stores match</h3></div>`;
+    if (!nearby.length && !showingAll) {
+      $("#storeMessage").innerHTML = `<div class="card card-pad mb-20" style="background:var(--orange-50);border-color:#fed7aa">
+        <strong>No stores in your area —</strong> showing stores from across Dhaka.</div>`;
+    } else $("#storeMessage").innerHTML = "";
+  }
+  renderStores();
+  $("#showAllStores").addEventListener("click", () => {
+    showingAll = !showingAll;
+    $("#showAllStores").textContent = showingAll ? "Show nearby only" : "Show all stores";
+    renderStores();
+  });
+
+  // Featured products — random selection across categories
+  let featProds = DATA_PRODUCTS.slice();
+  if (catFilter) featProds = featProds.filter(p => p.category_id === catFilter);
+  if (qFilter)   featProds = featProds.filter(p => p.name.toLowerCase().includes(qFilter.toLowerCase()));
+  // shuffle deterministic-ish
+  featProds = rankProducts(featProds, loc).slice(0, 8);
+  $("#featuredProducts").innerHTML = featProds.length ? featProds.map(p => productCard(p)).join("") :
+    `<div class="empty" style="grid-column:1/-1"><div class="ic">📦</div><h3>No products match</h3></div>`;
+
+  // Hero search
+  $("#heroSearchBtn").addEventListener("click", () => {
+    const v = $("#heroSearch").value.trim();
+    location.href = "?q=" + encodeURIComponent(v);
+  });
+  $("#heroSearch").addEventListener("keydown", e => {
+    if (e.key === "Enter") $("#heroSearchBtn").click();
+  });
+})();
+</script>
+</body>
+</html>

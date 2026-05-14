@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advertisements — EasyMart Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Advertisements</h1>
+      </div>
+    </div>
+
+    <!-- SECTION 1 — Shopkeeper ads -->
+    <div class="dash-section">
+      <h3>All shopkeeper ads <span class="muted" id="adCount" style="font-size:.85rem;font-weight:400"></span></h3>
+      <p class="muted" style="font-size:.88rem;margin-bottom:14px">Ads go live directly from shopkeepers — no approval needed. You can pause any ad that violates platform rules.</p>
+      <div id="adsTable"></div>
+    </div>
+
+    <!-- SECTION 2 — Top Deals curator -->
+    <div class="dash-section">
+      <h3>Top Deals — homepage slider <span class="badge badge-orange" id="selectedCount" style="margin-left:6px"></span></h3>
+      <p class="muted" style="font-size:.88rem;margin-bottom:14px">Select up to 10 products to feature in the homepage advertisement slider. Sorted by discount %, then by price.</p>
+
+      <h4 class="font-serif" style="font-size:1rem;margin:14px 0 10px">Live preview</h4>
+      <div id="previewSlider" style="margin-bottom:18px"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span class="muted" style="font-size:.85rem">All discounted products, sorted by best deal first</span>
+        <button class="btn btn-primary" id="publishBtn">Publish selection</button>
+      </div>
+      <div id="topDealsList"></div>
+    </div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["admin"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("advertisements"); attachSidebarEvents();
+
+  /* =============== Section 1: All ads =============== */
+  function renderAdsTable() {
+    const ads = DS.ads();
+    $("#adCount").textContent = `(${ads.length})`;
+    $("#adsTable").innerHTML = ads.length ? `<div class="table-wrap"><table class="table">
+      <thead><tr><th>Banner</th><th>Shop</th><th>Product</th><th>Status</th><th>Performance</th><th>Period</th><th></th></tr></thead>
+      <tbody>${ads.map(a => {
+        const p = DATA_PRODUCTS.find(x => x.id === a.product_id);
+        const s = DATA_STORES.find(x => x.id === a.store_id);
+        const owner = s ? DATA_USERS.find(u => u.id === s.owner_id) : null;
+        const status = String(a.status).toLowerCase();
+        const cls = { active: "badge-green", paused: "badge-amber", expired: "badge-gray" }[status] || "badge-gray";
+        return `<tr>
+          <td><img src="${escHTML(a.banner)}" class="thumb" style="width:80px;height:48px;border-radius:6px" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=200'"></td>
+          <td><strong>${escHTML(s?.name || "—")}</strong><br><span class="muted" style="font-size:.78rem">${escHTML(owner?.name || "")}</span></td>
+          <td>${escHTML(p?.name || "—")}</td>
+          <td><span class="badge ${cls}">${a.status}</span></td>
+          <td>${fmtNum(a.views)} views<br><span class="muted" style="font-size:.78rem">${fmtNum(a.clicks)} clicks</span></td>
+          <td><span class="muted" style="font-size:.82rem">${fmtDate(a.start_date || a.start)} – ${fmtDate(a.end_date || a.end)}</span></td>
+          <td class="actions-cell">${status === "active" ? `<button class="btn btn-secondary btn-sm" onclick="onPause(${a.id})">Pause</button>` :
+            status === "paused" ? `<button class="btn btn-primary btn-sm" onclick="onResume(${a.id})">Resume</button>` : ""}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div>` : `<div class="empty"><div class="ic">📢</div><h3>No ads yet</h3></div>`;
+  }
+  window.onPause = id => {
+    const ads = DS.ads().slice();
+    const a = ads.find(x => x.id === id); if (!a) return;
+    a.status = "paused";
+    writeStore("em_ads", ads);
+    if (window.DB?.isSupabase && window.DB?.write?.updateAd) {
+      window.DB.write.updateAd(id, { status: "paused" }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({ action: "UPDATE", entity: "ads", entity_id: id, description: `Admin paused advertisement #${id}` });
+    toast("Ad paused"); renderAdsTable(); renderTopDeals();
+  };
+  window.onResume = id => {
+    const ads = DS.ads().slice();
+    const a = ads.find(x => x.id === id); if (!a) return;
+    a.status = "active";
+    writeStore("em_ads", ads);
+    if (window.DB?.isSupabase && window.DB?.write?.updateAd) {
+      window.DB.write.updateAd(id, { status: "active" }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({ action: "UPDATE", entity: "ads", entity_id: id, description: `Admin resumed advertisement #${id}` });
+    toast("Ad resumed"); renderAdsTable(); renderTopDeals();
+  };
+
+  /* =============== Section 2: Top deals curator =============== */
+  // Use ad IDs that are featured to track selection
+  let selectedIds = new Set(DS.ads().filter(a => a.featured_in_top_deals).map(a => a.id));
+
+  function renderTopDeals() {
+    // Build a list of ad-eligible items: products with discount > 0
+    // Each becomes a "potential ad" — selection toggles featured_in_top_deals on its existing ad if any.
+    const products = DATA_PRODUCTS.filter(p => p.discount > 0).sort((a, b) => (b.discount||0) - (a.discount||0) || (a.price||0) - (b.price||0));
+    $("#selectedCount").textContent = `${selectedIds.size}/10 selected`;
+
+    // Preview using selected ads
+    const ads = DS.ads();
+    const featuredAds = ads.filter(a => selectedIds.has(a.id) && (a.status||"active").toLowerCase() === "active");
+    if (featuredAds.length) {
+      renderSlider($("#previewSlider"), featuredAds);
+    } else {
+      $("#previewSlider").innerHTML = `<div class="card-pad" style="background:var(--surface-2);text-align:center;padding:50px;border-radius:var(--radius-md);color:var(--text-3)"><div style="font-size:2rem">🎯</div>No ads selected for the homepage slider yet</div>`;
+    }
+
+    // List of products to choose from
+    $("#topDealsList").innerHTML = `<div class="table-wrap"><table class="table">
+      <thead><tr><th></th><th>Product</th><th>Shop</th><th>Original</th><th>Discounted</th><th>%</th><th>Featured</th></tr></thead>
+      <tbody>${products.slice(0, 30).map(p => {
+        const s = DATA_STORES.find(x => x.id === p.store_id);
+        const ad = ads.find(a => a.product_id === p.id);
+        const isSelected = ad && selectedIds.has(ad.id);
+        const after = priceAfter(p.price, p.discount);
+        return `<tr>
+          <td><img src="${escHTML(p.image)}" class="thumb" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=200'"></td>
+          <td><strong>${escHTML(p.name)}</strong></td>
+          <td>${escHTML(s?.name || "—")}</td>
+          <td><span class="muted" style="text-decoration:line-through">${fmtBDT(p.price)}</span></td>
+          <td><strong class="font-serif txt-green">${fmtBDT(after)}</strong></td>
+          <td><span class="discount-badge">−${p.discount}%</span></td>
+          <td>${ad ? `<label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px"><input type="checkbox" class="js-feat" data-aid="${ad.id}" ${isSelected?"checked":""}> ${isSelected ? `<span class="badge badge-green">Featured</span>` : `Add`}</label>` : `<span class="muted" style="font-size:.78rem">No ad created</span>`}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div>`;
+
+    $$(".js-feat").forEach(cb => cb.addEventListener("change", e => {
+      const id = Number(cb.dataset.aid);
+      if (cb.checked) {
+        if (selectedIds.size >= 10) {
+          toast("You can feature at most 10 ads. Deselect one first.", "warn");
+          cb.checked = false; return;
+        }
+        selectedIds.add(id);
+      } else {
+        selectedIds.delete(id);
+      }
+      renderTopDeals();
+    }));
+  }
+
+  $("#publishBtn").addEventListener("click", async () => {
+    const ads = DS.ads().slice();
+    ads.forEach(a => a.featured_in_top_deals = selectedIds.has(a.id));
+    writeStore("em_ads", ads);
+    if (window.DB?.isSupabase && window.DB?.write?.updateAd) {
+      // Push the featured flag for every ad in parallel
+      try {
+        await Promise.all(ads.map(a => window.DB.write.updateAd(a.id, { featured_in_top_deals: a.featured_in_top_deals })));
+      } catch (err) {
+        toast("Cloud sync error: " + err.message, "error");
+      }
+    }
+    appendAuditLog({ action: "UPDATE", entity: "ads", entity_id: null, description: `Updated homepage slider — ${selectedIds.size} ads featured` });
+    toast(`✓ Published — ${selectedIds.size} ads now appear on the homepage slider`);
+  });
+
+  renderAdsTable();
+  renderTopDeals();
+})();
+</script>
+</body>
+</html>

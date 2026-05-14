@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advertisements — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">My advertisements</h1>
+      </div>
+    </div>
+
+    <div class="rg-2col" style="margin-bottom:18px">
+      <div class="dash-section">
+        <h3>Create new ad</h3>
+        <p class="muted" style="font-size:.88rem;margin-bottom:14px">Ads go live immediately and appear in the homepage and dashboard sliders. No admin approval needed.</p>
+        <div class="stack">
+          <div class="field"><label>Select a product</label><select class="select" id="adProduct"></select></div>
+          <div class="field-row">
+            <div class="field"><label>Start date</label><input class="input" id="adStart" type="date"></div>
+            <div class="field"><label>End date</label><input class="input" id="adEnd" type="date"></div>
+          </div>
+          <div class="field"><label>Banner image</label>
+            <div class="upload-grid">
+              <div class="upload-tile"><h5>1. Upload from PC</h5><p class="small">Max 2MB · JPG/PNG</p><input type="file" id="adFile" accept="image/*"></div>
+              <div class="upload-tile"><h5>2. Paste image link</h5><p class="small">Any image URL</p><input class="input" id="adUrl" placeholder="https://..."></div>
+              <div class="upload-tile"><h5>3. Unsplash search</h5><p class="small">Search keyword</p><div style="display:flex;gap:6px"><input class="input" id="adSearch" placeholder="apples" style="flex:1"><button class="btn btn-secondary btn-sm" id="adGo">Go</button></div></div>
+            </div>
+            <input type="hidden" id="adImage">
+          </div>
+          <button class="btn btn-primary" id="createAd">Create &amp; publish</button>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <h3>Live preview</h3>
+        <div id="adPreview" class="slider" style="height:280px;background:#1f2937"></div>
+      </div>
+    </div>
+
+    <div class="dash-section">
+      <h3>Your ads</h3>
+      <div id="adsTable"></div>
+    </div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["shopkeeper"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("advertisements"); attachSidebarEvents();
+  const myStoreIds = u.store_ids || (u.store_id ? [u.store_id] : []);
+  const myProducts = DATA_PRODUCTS.filter(p => myStoreIds.includes(p.store_id));
+
+  $("#adProduct").innerHTML = myProducts.map(p => {
+    const s = DATA_STORES.find(s => s.id === p.store_id);
+    return `<option value="${p.id}" data-img="${escHTML(p.image)}">${escHTML(p.name)} · ${escHTML(s?.name||"")}</option>`;
+  }).join("");
+  $("#adStart").value = todayStr();
+  $("#adEnd").value = new Date(Date.now() + 30*86400000).toISOString().slice(0, 10);
+
+  function setPreview(src) {
+    $("#adImage").value = src;
+    const pid = Number($("#adProduct").value);
+    const p = DATA_PRODUCTS.find(x => x.id === pid);
+    const s = p ? DATA_STORES.find(s => s.id === p.store_id) : null;
+    const after = p ? priceAfter(p.price, p.discount) : 0;
+    $("#adPreview").innerHTML = `<div class="slide active" style="position:absolute;inset:0">
+      <img src="${escHTML(src)}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=1400'">
+      <div class="slide-overlay" style="display:flex;flex-direction:column;justify-content:center;padding:24px 32px;color:#fff;background:linear-gradient(90deg, rgba(20,83,45,.85), rgba(20,83,45,0))">
+        <span class="eyebrow" style="color:#bbf7d0">Featured deal</span>
+        <h3 style="font-family:'Fraunces',serif;font-size:1.6rem;margin:6px 0">${escHTML(p?.name||"")}</h3>
+        <div style="font-size:.85rem;opacity:.9">at <strong>${escHTML(s?.name||"")}</strong>${p?.discount?` · <span class="discount-badge" style="margin-left:6px">−${p.discount}%</span>`:""}</div>
+        ${p ? `<div class="font-serif" style="font-size:1.5rem;font-weight:700;margin-top:10px">${fmtBDT(after)}${p.discount?` <span style="color:#bbf7d0;text-decoration:line-through;font-size:.95rem">${fmtBDT(p.price)}</span>`:""}</div>` : ""}
+      </div></div>`;
+  }
+  // Initial preview
+  setPreview(myProducts[0]?.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1400");
+
+  $("#adProduct").addEventListener("change", () => {
+    const opt = $("#adProduct").options[$("#adProduct").selectedIndex];
+    setPreview($("#adImage").value || opt.dataset.img);
+  });
+  $("#adFile").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 2*1024*1024) { toast("Max 2MB", "error"); return; }
+    const r = new FileReader(); r.onload = () => setPreview(r.result); r.readAsDataURL(f);
+  });
+  $("#adUrl").addEventListener("input", e => { if (e.target.value.trim()) setPreview(e.target.value.trim()); });
+  $("#adGo").addEventListener("click", () => {
+    const k = $("#adSearch").value.trim(); if (!k) return;
+    setPreview(`https://source.unsplash.com/1400x600/?${encodeURIComponent(k)}&t=${Date.now()}`);
+  });
+
+  $("#createAd").addEventListener("click", () => {
+    const pid = Number($("#adProduct").value);
+    const p = DATA_PRODUCTS.find(x => x.id === pid);
+    if (!p) { toast("Select a product", "error"); return; }
+    const ads = DS.ads().slice();
+    const newAd = {
+      id: Math.max(0, ...ads.map(a=>a.id)) + 1,
+      shopkeeper_id: u.id, store_id: p.store_id, product_id: pid,
+      banner: $("#adImage").value || p.image,
+      title: p.name + " — Featured",
+      status: "active", views: 0, clicks: 0,
+      start_date: $("#adStart").value, end_date: $("#adEnd").value,
+      start: $("#adStart").value, end: $("#adEnd").value,
+      featured_in_top_deals: false
+    };
+    ads.unshift(newAd);
+    writeStore("em_ads", ads);
+    if (window.DB?.isSupabase && window.DB?.write?.insertAd) {
+      const dbRow = { ...newAd }; delete dbRow.id; delete dbRow.shopkeeper_id;
+      window.DB.write.insertAd(dbRow).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({ action: "CREATE", entity: "ads", entity_id: newAd.id, description: `Created ad for ${p.name}` });
+    toast("Ad published — it's now live!");
+    render();
+  });
+
+  function render() {
+    const ads = DS.ads().filter(a => myStoreIds.includes(a.store_id));
+    if (!ads.length) {
+      $("#adsTable").innerHTML = `<div class="empty"><div class="ic">📢</div><h3 class="font-serif">No ads yet</h3><p class="muted">Create your first ad above.</p></div>`;
+      return;
+    }
+    $("#adsTable").innerHTML = `<div class="table-wrap"><table class="table">
+      <thead><tr><th>Banner</th><th>Product</th><th>Status</th><th>Performance</th><th>Period</th><th></th></tr></thead>
+      <tbody>${ads.map(a => {
+        const p = DATA_PRODUCTS.find(x => x.id === a.product_id);
+        const s = DATA_STORES.find(x => x.id === a.store_id);
+        const status = String(a.status).toLowerCase();
+        const cls = { active: "badge-green", paused: "badge-amber", expired: "badge-gray" }[status] || "badge-gray";
+        const ctr = a.views ? ((a.clicks / a.views) * 100).toFixed(1) : "0";
+        return `<tr>
+          <td><img src="${escHTML(a.banner)}" class="thumb" style="width:80px;height:48px;border-radius:6px" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=200'"></td>
+          <td><strong>${escHTML(p?.name||"—")}</strong><br><span class="muted" style="font-size:.78rem">${escHTML(s?.name||"")}</span></td>
+          <td><span class="badge ${cls}">${a.status}</span></td>
+          <td>${fmtNum(a.views)} views<br><span class="muted" style="font-size:.78rem">${fmtNum(a.clicks)} clicks · ${ctr}% CTR</span></td>
+          <td><span class="muted" style="font-size:.82rem">${fmtDate(a.start_date || a.start)}<br>to ${fmtDate(a.end_date || a.end)}</span></td>
+          <td class="actions-cell">${status === "active" ? `<button class="btn btn-secondary btn-sm" onclick="onPause(${a.id})">Pause</button>` :
+            status === "paused" ? `<button class="btn btn-primary btn-sm" onclick="onResume(${a.id})">Resume</button>` : ""}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div>`;
+  }
+
+  window.onPause = id => {
+    const ads = DS.ads().slice();
+    const a = ads.find(x => x.id === id); if (!a) return;
+    a.status = "paused";
+    writeStore("em_ads", ads);
+    if (window.DB?.isSupabase && window.DB?.write?.updateAd) {
+      window.DB.write.updateAd(id, { status: "paused" }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({ action: "UPDATE", entity: "ads", entity_id: id, description: "Paused advertisement" });
+    toast("Ad paused"); render();
+  };
+  window.onResume = id => {
+    const ads = DS.ads().slice();
+    const a = ads.find(x => x.id === id); if (!a) return;
+    a.status = "active";
+    writeStore("em_ads", ads);
+    if (window.DB?.isSupabase && window.DB?.write?.updateAd) {
+      window.DB.write.updateAd(id, { status: "active" }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({ action: "UPDATE", entity: "ads", entity_id: id, description: "Resumed advertisement" });
+    toast("Ad resumed"); render();
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

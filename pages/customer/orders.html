@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Orders — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">My orders</h1>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="tabs" id="statusTabs">
+        <button class="active" data-s="all">All</button>
+        <button data-s="pending">Pending</button>
+        <button data-s="confirmed">Confirmed</button>
+        <button data-s="preparing">Preparing</button>
+        <button data-s="shipped">Shipped</button>
+        <button data-s="delivered">Delivered</button>
+        <button data-s="cancelled">Cancelled</button>
+      </div>
+      <select class="select" id="dateFilter" style="max-width:180px">
+        <option value="all">All time</option>
+        <option value="today">Today</option>
+        <option value="week">This week</option>
+        <option value="month">This month</option>
+      </select>
+      <div class="field has-icon" style="flex:1;min-width:240px">
+        <span class="leading">🔍</span>
+        <input id="search" class="input" placeholder="Search by store or product…">
+      </div>
+    </div>
+
+    <div id="orderList"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["customer"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("orders"); attachSidebarEvents();
+
+  const STATE = { status: "all", date: "all", q: "" };
+  const STATUSES = ["pending", "confirmed", "preparing", "shipped", "delivered", "cancelled"];
+  const STATUS_BADGE = { pending: "badge-orange", confirmed: "badge-blue", preparing: "badge-amber", shipped: "badge-blue", delivered: "badge-green", cancelled: "badge-red" };
+
+  function passDate(o) {
+    if (STATE.date === "all") return true;
+    const d = new Date(o.date); const now = new Date();
+    if (STATE.date === "today") return d.toDateString() === now.toDateString();
+    if (STATE.date === "week")  return (now - d) / (1000*60*60*24) <= 7;
+    if (STATE.date === "month") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return true;
+  }
+
+  function render() {
+    let orders = DS.orders().filter(o => o.customer_id === u.id);
+    if (STATE.status !== "all") orders = orders.filter(o => String(o.status).toLowerCase() === STATE.status);
+    if (STATE.q) {
+      const q = STATE.q.toLowerCase();
+      orders = orders.filter(o => {
+        const store = DATA_STORES.find(s => s.id === o.store_id);
+        if (store && store.name.toLowerCase().includes(q)) return true;
+        return o.items.some(it => {
+          const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+          return p && p.name.toLowerCase().includes(q);
+        });
+      });
+    }
+    orders = orders.filter(passDate);
+    orders.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    if (!orders.length) {
+      $("#orderList").innerHTML = `<div class="empty card" style="padding:60px 24px">
+        <div class="ic">📦</div><h3 class="font-serif">No orders found</h3>
+        <p class="muted">Try adjusting your filters or place your first order.</p>
+        <a href="../../index.html" class="btn btn-primary mt-16">Browse products</a></div>`;
+      return;
+    }
+
+    $("#orderList").innerHTML = orders.map(o => {
+      const store = DATA_STORES.find(s => s.id === o.store_id);
+      const status = String(o.status).toLowerCase();
+      const cancelled = status === "cancelled";
+      const stepIdx = STATUSES.indexOf(status);
+      const itemsHTML = o.items.map(it => {
+        const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+        return `<div class="order-item"><span class="nm">${escHTML(p?.name || "Item")} × ${it.qty}</span><span>${fmtBDT(priceAfter(it.price, it.discount) * it.qty)}</span></div>`;
+      }).join("");
+
+      // Status timeline (skip if cancelled)
+      const timeline = cancelled ? `<span class="badge badge-red">Order cancelled</span>` : `<div class="timeline">
+        ${STATUSES.slice(0, 5).map((s, i) => {
+          const cls = i < stepIdx ? "done" : i === stepIdx ? "active" : "";
+          return `<div class="timeline-step ${cls}"><span class="dot"></span><span class="lbl">${s.charAt(0).toUpperCase() + s.slice(1)}</span></div>${i < 4 ? `<div class="timeline-line ${i < stepIdx ? "done" : ""}"></div>` : ""}`;
+        }).join("")}
+      </div>`;
+
+      // Review block
+      const reviewBlock = (status === "delivered") ? (o.review ? `
+        <div class="card-pad bg-orange-50" style="border-radius:var(--radius);padding:14px 16px;margin-top:12px">
+          <strong>Your review:</strong> <span style="color:var(--orange-500)">${"★".repeat(o.review.rating)}${"☆".repeat(5 - o.review.rating)}</span>
+          <p style="margin-top:4px;font-style:italic;font-family:'Fraunces',serif">"${escHTML(o.review.text)}"</p>
+        </div>` : `
+        <div style="margin-top:12px;padding:14px;border:1px dashed var(--border);border-radius:var(--radius)">
+          <strong style="font-size:.92rem">Rate &amp; review this order</strong>
+          <div class="rating-input" data-oid="${o.id}" style="margin:8px 0;display:flex;gap:4px;font-size:1.5rem;color:var(--text-4);cursor:pointer">
+            ${[1,2,3,4,5].map(n => `<span class="js-star" data-v="${n}">☆</span>`).join("")}
+          </div>
+          <textarea class="textarea js-rev-text" placeholder="Share your experience…" style="min-height:60px"></textarea>
+          <button class="btn btn-primary btn-sm mt-8" onclick="onSubmitReview('${o.id}', this)">Submit review</button>
+        </div>`) : "";
+
+      return `<div class="order-card fade-up">
+        <div class="order-head">
+          <div class="meta">
+            <strong>${escHTML(store?.name || "Store")}</strong>
+            <div class="id">${escHTML(o.id)} · ${fmtDate(o.date)}</div>
+          </div>
+          <span class="badge ${STATUS_BADGE[status] || "badge-gray"}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+        </div>
+        ${timeline}
+        <div class="order-items">${itemsHTML}</div>
+        <div class="order-foot">
+          <div>
+            <span class="muted" style="font-size:.85rem">${o.delivery_type}</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <span class="total">${fmtBDT(o.total)}</span>
+            ${status === "delivered" ? `<button class="btn btn-secondary btn-sm" onclick="onReorder('${o.id}')">Reorder</button>` : ""}
+            ${status === "pending" ? `<button class="btn btn-danger btn-sm" onclick="onCancel('${o.id}')">Cancel</button>` : ""}
+          </div>
+        </div>
+        ${reviewBlock}
+      </div>`;
+    }).join("");
+
+    // Wire star rating UIs
+    $$(".rating-input").forEach(host => {
+      const stars = $$(".js-star", host);
+      stars.forEach(st => st.addEventListener("click", () => {
+        const v = Number(st.dataset.v);
+        host.dataset.rating = v;
+        stars.forEach(s => { s.textContent = Number(s.dataset.v) <= v ? "★" : "☆"; s.style.color = Number(s.dataset.v) <= v ? "var(--orange-500)" : "var(--text-4)"; });
+      }));
+    });
+  }
+
+  // Handlers
+  $$("#statusTabs button").forEach(b => b.addEventListener("click", () => {
+    $$("#statusTabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    STATE.status = b.dataset.s;
+    render();
+  }));
+  $("#dateFilter").addEventListener("change", e => { STATE.date = e.target.value; render(); });
+  $("#search").addEventListener("input", e => { STATE.q = e.target.value; render(); });
+
+  window.onReorder = (oid) => {
+    const o = DS.orders().find(x => String(x.id) === String(oid)); if (!o) return;
+    o.items.forEach(it => {
+      const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+      if (p) cartAdd(it.product_id, it.qty);
+    });
+    setTimeout(() => location.href = "cart.html", 500);
+  };
+  window.onCancel = (oid) => confirmDialog("Cancel this order? This can't be undone.", () => {
+    const orders = DS.orders().slice();
+    const o = orders.find(x => String(x.id) === String(oid)); if (!o) return;
+    o.status = "cancelled";
+    writeStore("em_orders", orders);
+    if (window.DB?.isSupabase && window.DB?.write?.updateOrder) {
+      window.DB.write.updateOrder(o.id, { status: "cancelled" }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({ action: "UPDATE", entity: "orders", entity_id: typeof o.id === "number" ? o.id : null, description: "Customer cancelled order" });
+    toast("Order cancelled");
+    render();
+  }, { danger: true, confirm: "Yes, cancel" });
+  window.onSubmitReview = (oid, btn) => {
+    const card = btn.closest(".order-card");
+    const ratingHost = $(".rating-input", card);
+    const r = Number(ratingHost?.dataset.rating || 0);
+    const t = $(".js-rev-text", card).value.trim();
+    if (!r) { toast("Please select a star rating", "error"); return; }
+    if (!t) { toast("Please write a short review", "error"); return; }
+    const orders = DS.orders().slice();
+    const o = orders.find(x => String(x.id) === String(oid)); if (!o) return;
+    o.review = { rating: r, text: t };
+    writeStore("em_orders", orders);
+    if (window.DB?.isSupabase && window.DB?.write?.updateOrder) {
+      window.DB.write.updateOrder(o.id, { review: o.review }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    coinsAppend(u.id, 10, "Review submitted");
+    appendAuditLog({ action: "CREATE", entity: "reviews", entity_id: typeof o.id === "number" ? o.id : null, description: `Submitted ${r}-star review` });
+    toast("+10 coins · Thanks for your review!");
+    render();
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

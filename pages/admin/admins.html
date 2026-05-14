@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admins — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Admins</h1>
+      </div>
+      <button class="btn btn-primary" id="addAdmin">+ Add new admin</button>
+    </div>
+
+    <div class="filter-bar">
+      <div class="tabs" id="statusTabs">
+        <button class="active" data-s="all">All</button>
+        <button data-s="active">Active</button>
+        <button data-s="inactive">Deactivated</button>
+      </div>
+      <div class="field has-icon" style="flex:1;min-width:240px">
+        <span class="leading">🔍</span>
+        <input id="search" class="input" placeholder="Search by name or email…">
+      </div>
+    </div>
+
+    <div id="adminGrid"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["admin"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("admins"); attachSidebarEvents();
+
+  const STATE = { status: "all", q: "" };
+  const ROLE_COLORS = { "Super Admin": "badge-violet", "Moderator": "badge-blue", "Support": "badge-teal" };
+
+  function getAdmins() {
+    let admins = DATA_USERS.filter(x => x.type === "admin");
+    if (STATE.status !== "all") admins = admins.filter(a => (a.status || "active") === STATE.status);
+    if (STATE.q) {
+      const q = STATE.q.toLowerCase();
+      admins = admins.filter(a => a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q));
+    }
+    return admins;
+  }
+
+  function render() {
+    const admins = getAdmins();
+    if (!admins.length) {
+      $("#adminGrid").innerHTML = `<div class="empty card" style="padding:60px"><div class="ic">👑</div><h3 class="font-serif">No admins match</h3></div>`;
+      return;
+    }
+    $("#adminGrid").innerHTML = `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+      ${admins.map(a => {
+        const isMe = a.id === u.id;
+        const isActive = (a.status || "active") === "active";
+        return `<div class="card card-pad fade-up admin-card" style="cursor:pointer;position:relative" onclick="viewAdmin('${a.id}')">
+          ${isMe ? `<span class="badge badge-orange" style="position:absolute;top:14px;right:14px">You</span>` : ""}
+          <div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">
+            <img src="${escHTML(a.avatar)}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid var(--green-50)" onerror="this.src='https://i.pravatar.cc/200?img=20'">
+            <div style="min-width:0">
+              <strong style="display:block;font-size:1rem">${escHTML(a.name)}</strong>
+              <span class="muted" style="font-size:.82rem">${escHTML(a.email)}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+            <span class="badge ${ROLE_COLORS[a.role_level] || "badge-gray"}">${escHTML(a.role_level || "Admin")}</span>
+            <span class="badge ${isActive ? "badge-green" : "badge-red"}">${isActive ? "Active" : "Deactivated"}</span>
+          </div>
+          <div class="muted" style="font-size:.78rem;margin-bottom:14px">Member since ${fmtDate(a.created_at || a.joined)}</div>
+          <div style="display:flex;gap:6px" onclick="event.stopPropagation()">
+            <button class="btn btn-secondary btn-sm" style="flex:1" onclick="viewAdmin('${a.id}')">View profile</button>
+            ${!isMe ? `<button class="btn ${isActive ? "btn-danger" : "btn-primary"} btn-sm" onclick="onToggle('${a.id}')">${isActive ? "Deactivate" : "Reactivate"}</button>` : ""}
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }
+
+  $$("#statusTabs button").forEach(b => b.addEventListener("click", () => {
+    $$("#statusTabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    STATE.status = b.dataset.s; render();
+  }));
+  $("#search").addEventListener("input", e => { STATE.q = e.target.value; render(); });
+
+  window.viewAdmin = (id) => {
+    const a = DATA_USERS.find(x => x.id === id); if (!a) return;
+    const myActions = DS.audit().filter(l => l.user_id === id);
+    const html = `
+      <div class="modal-head"><h3>${escHTML(a.name)}</h3><button class="modal-close" data-close>×</button></div>
+      <div class="modal-body">
+        <div style="display:flex;gap:18px;align-items:center;margin-bottom:18px">
+          <img src="${escHTML(a.avatar)}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:4px solid var(--green-50)" onerror="this.src='https://i.pravatar.cc/200?img=20'">
+          <div>
+            <h2 class="font-serif" style="margin-bottom:4px">${escHTML(a.name)}</h2>
+            <p class="muted">${escHTML(a.email)}</p>
+            <p class="muted" style="font-size:.85rem">${escHTML(a.phone||"")}</p>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <span class="badge ${ROLE_COLORS[a.role_level] || "badge-gray"}">${escHTML(a.role_level || "Admin")}</span>
+              <span class="badge ${(a.status||"active")==="active"?"badge-green":"badge-red"}">${(a.status||"active")==="active"?"Active":"Deactivated"}</span>
+            </div>
+          </div>
+        </div>
+        <hr class="divider">
+        <h4 class="font-serif" style="font-size:1.05rem;margin-bottom:10px">Activity summary</h4>
+        <div class="rg-3col-tight">
+          <div class="stat-card green" style="padding:14px"><div class="label">Actions taken</div><div class="value" style="font-size:1.5rem">${fmtNum(a.actions_taken || myActions.length)}</div></div>
+          <div class="stat-card orange" style="padding:14px"><div class="label">Shops suspended</div><div class="value" style="font-size:1.5rem">${a.shops_suspended || 0}</div></div>
+          <div class="stat-card blue" style="padding:14px"><div class="label">Ads paused</div><div class="value" style="font-size:1.5rem">${a.ads_paused || 0}</div></div>
+        </div>
+        <h4 class="font-serif" style="font-size:1.05rem;margin:18px 0 10px">Recent actions</h4>
+        ${myActions.length ? myActions.slice(0,8).map(l => `<div style="padding:10px 0;border-bottom:1px solid var(--border-2);font-size:.88rem"><strong>${l.action}</strong> · ${escHTML(l.description)}<br><span class="muted" style="font-size:.78rem">${fmtDateTime(l.datetime)}</span></div>`).join("") : `<p class="muted">No recorded activity yet.</p>`}
+        <p class="muted" style="font-size:.82rem;margin-top:14px">Member since ${fmtDate(a.created_at || a.joined)}</p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-secondary" data-close>Close</button></div>`;
+    openModal(html, { size: "lg" });
+  };
+
+  window.onToggle = (id) => {
+    if (String(id) === String(u.id)) { toast("You can't deactivate your own account", "error"); return; }
+    const a = DATA_USERS.find(x => String(x.id) === String(id)); if (!a) return;
+    const willDeactivate = (a.status || "active") === "active";
+    confirmDialog(`${willDeactivate ? "Deactivate" : "Reactivate"} ${a.name}?`, () => {
+      const newStatus = willDeactivate ? "inactive" : "active";
+      a.status = newStatus;
+      if (window.DB?.isSupabase && window.DB?.write?.updateUser) {
+        window.DB.write.updateUser(a.id, { status: newStatus }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+      }
+      appendAuditLog({ action: "UPDATE", entity: "users", entity_id: typeof a.id === "number" ? a.id : null, description: `${willDeactivate ? "Deactivated" : "Reactivated"} admin: ${a.name}` });
+      toast(`${a.name} ${willDeactivate ? "deactivated" : "reactivated"}`);
+      render();
+    }, { danger: willDeactivate });
+  };
+
+  $("#addAdmin").addEventListener("click", () => {
+    const html = `
+      <div class="modal-head"><h3>Add new admin</h3><button class="modal-close" data-close>×</button></div>
+      <div class="modal-body">
+        <div class="stack">
+          <div class="field"><label>Full name</label><input class="input" id="naName" placeholder="Admin name"></div>
+          <div class="field"><label>Email</label><input class="input" id="naEmail" type="email" placeholder="admin@easymart.com"></div>
+          <div class="field"><label>Temporary password</label><input class="input" id="naPass" type="password" placeholder="Min 6 characters"></div>
+          <div class="field"><label>Role level</label><select class="select" id="naRole"><option>Super Admin</option><option selected>Moderator</option><option>Support</option></select></div>
+        </div>
+      </div>
+      <div class="modal-foot"><button class="btn btn-secondary" data-close>Cancel</button><button class="btn btn-primary" id="naCreate">Create admin</button></div>`;
+    const { host, close } = openModal(html);
+    $("#naCreate", host).addEventListener("click", async () => {
+      const name = $("#naName", host).value.trim();
+      const email = $("#naEmail", host).value.trim();
+      const pass = $("#naPass", host).value;
+      if (!name || !email) { toast("Name and email are required", "error"); return; }
+      if (pass.length < 6) { toast("Password must be at least 6 characters", "error"); return; }
+      if (DATA_USERS.find(x => x.email.toLowerCase() === email.toLowerCase())) { toast("Email already exists", "error"); return; }
+      const role_level = $("#naRole", host).value;
+
+      if (window.DB?.isSupabase && window.DB?.write?.insertAdmin) {
+        try {
+          await window.DB.write.insertAdmin({ name, email, password: pass, role_level });
+          appendAuditLog({ action: "CREATE", entity: "users", entity_id: null, description: `Added new admin: ${name} (${role_level})` });
+          toast("Admin created"); close(); render();
+          return;
+        } catch (err) {
+          toast(err.message || "Failed to create admin", "error"); return;
+        }
+      }
+
+      // Demo path
+      const id = Math.max(300, ...DATA_USERS.filter(x => x.type === "admin").map(x => x.id)) + 1;
+      const newAdmin = { id, type: "admin", name, email, password: pass, phone: "", avatar: "https://i.pravatar.cc/200?img=" + (Math.floor(Math.random()*70)+1), role_level, status: "active", created_at: todayStr(), actions_taken: 0, shops_suspended: 0, ads_paused: 0 };
+      DATA_USERS.push(newAdmin);
+      appendAuditLog({ action: "CREATE", entity: "users", entity_id: id, description: `Added new admin: ${name} (${newAdmin.role_level})` });
+      toast("Admin created"); close(); render();
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

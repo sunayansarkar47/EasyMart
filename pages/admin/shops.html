@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Shops — EasyMart Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Shops</h1>
+      </div>
+      <button class="btn btn-secondary" id="exportCsv">⬇ Export CSV</button>
+    </div>
+
+    <div class="filter-bar">
+      <div class="tabs" id="statusTabs">
+        <button class="active" data-s="all">All <span class="muted" id="cAll"></span></button>
+        <button data-s="active">Active <span class="muted" id="cActive"></span></button>
+        <button data-s="suspended">Suspended <span class="muted" id="cSusp"></span></button>
+      </div>
+      <select class="select" id="catFilter" style="max-width:220px"><option value="">All categories</option></select>
+      <div class="field has-icon" style="flex:1;min-width:240px">
+        <span class="leading">🔍</span>
+        <input id="search" class="input" placeholder="Search by name, location, owner…">
+      </div>
+    </div>
+
+    <div id="shopsTable"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["admin"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("shops"); attachSidebarEvents();
+
+  // Default status field if missing
+  DATA_STORES.forEach(s => { if (!s.status) s.status = "active"; });
+
+  $("#catFilter").innerHTML += DATA_CATEGORIES.map(c => `<option value="${c.id}">${c.icon} ${escHTML(c.name)}</option>`).join("");
+
+  const STATE = { status: "all", q: "", cat: "" };
+
+  function getShops() {
+    let shops = DATA_STORES.slice();
+    if (STATE.status !== "all") shops = shops.filter(s => (s.status || "active") === STATE.status);
+    if (STATE.cat) shops = shops.filter(s => (s.category_ids || []).includes(Number(STATE.cat)));
+    if (STATE.q) {
+      const q = STATE.q.toLowerCase();
+      shops = shops.filter(s => {
+        if (s.name.toLowerCase().includes(q)) return true;
+        if ((s.area || "").toLowerCase().includes(q)) return true;
+        if ((s.upazila || "").toLowerCase().includes(q)) return true;
+        const owner = DATA_USERS.find(u => u.id === s.owner_id);
+        return owner && owner.name.toLowerCase().includes(q);
+      });
+    }
+    return shops;
+  }
+
+  function refreshCounts() {
+    $("#cAll").textContent = `(${DATA_STORES.length})`;
+    $("#cActive").textContent = `(${DATA_STORES.filter(s => (s.status||"active")==="active").length})`;
+    $("#cSusp").textContent = `(${DATA_STORES.filter(s => s.status==="suspended").length})`;
+  }
+
+  function render() {
+    refreshCounts();
+    const shops = getShops();
+    if (!shops.length) {
+      $("#shopsTable").innerHTML = `<div class="empty card" style="padding:60px"><div class="ic">🏪</div><h3 class="font-serif">No shops match</h3></div>`;
+      return;
+    }
+    $("#shopsTable").innerHTML = `<div class="table-wrap"><table class="table">
+      <thead><tr><th>Shop</th><th>Categories</th><th>Location</th><th>Owner</th><th>Registered</th><th>Status</th><th></th></tr></thead>
+      <tbody>${shops.map(s => {
+        const owner = DATA_USERS.find(u => u.id === s.owner_id);
+        const isActive = (s.status||"active") === "active";
+        const cats = (s.category_ids||[]).slice(0,2).map(cid => { const c = DATA_CATEGORIES.find(c=>c.id===cid); return c ? c.icon : ""; }).join(" ");
+        return `<tr style="cursor:pointer" onclick="viewShop(${s.id})">
+          <td><div style="display:flex;gap:10px;align-items:center"><img src="${escHTML(s.image)}" class="thumb" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=200'"><div><strong>${escHTML(s.name)}</strong><br><span class="muted" style="font-size:.75rem">★ ${s.rating} · ${s.reviews_count||s.reviews||0} reviews</span></div></div></td>
+          <td><span style="font-size:1.2rem">${cats}</span></td>
+          <td>${escHTML(s.area)}<br><span class="muted" style="font-size:.78rem">${escHTML(s.upazila)}</span></td>
+          <td>${escHTML(owner?.name || "—")}<br><span class="muted" style="font-size:.78rem">${escHTML(owner?.email || "")}</span></td>
+          <td><span class="muted" style="font-size:.82rem">${fmtDate(s.created_at || "2024-01-01")}</span></td>
+          <td><span class="badge ${isActive ? "badge-green" : "badge-red"}">${isActive ? "Active" : "Suspended"}</span></td>
+          <td class="actions-cell" onclick="event.stopPropagation()">${isActive ? `<button class="btn btn-danger btn-sm" onclick="onSuspend(${s.id})">Suspend</button>` : `<button class="btn btn-primary btn-sm" onclick="onUnsuspend(${s.id})">Unsuspend</button>`}</td>
+        </tr>`;
+      }).join("")}</tbody></table></div>`;
+  }
+
+  $$("#statusTabs button").forEach(b => b.addEventListener("click", () => {
+    $$("#statusTabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    STATE.status = b.dataset.s; render();
+  }));
+  $("#search").addEventListener("input", e => { STATE.q = e.target.value; render(); });
+  $("#catFilter").addEventListener("change", e => { STATE.cat = e.target.value; render(); });
+
+  window.viewShop = id => {
+    const s = DATA_STORES.find(x => x.id === id); if (!s) return;
+    const owner = DATA_USERS.find(u => u.id === s.owner_id);
+    const products = DATA_PRODUCTS.filter(p => p.store_id === id);
+    const orders = DS.orders().filter(o => o.store_id === id);
+    const revenue = orders.filter(o => String(o.status).toLowerCase()==="delivered").reduce((s,o)=>s+o.total,0);
+    const html = `
+      <div class="modal-head"><h3>${escHTML(s.name)}</h3><button class="modal-close" data-close>×</button></div>
+      <div class="modal-body">
+        <div style="height:160px;border-radius:var(--radius);overflow:hidden;margin-bottom:14px">
+          <img src="${escHTML(s.banner||s.image)}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=1400'">
+        </div>
+        <p style="font-size:.92rem;margin-bottom:10px">${escHTML(s.description||"")}</p>
+        <div class="row gap-12 mb-16" style="flex-wrap:wrap">
+          <span><strong>Owner:</strong> ${escHTML(owner?.name||"—")}</span>
+          <span><strong>Phone:</strong> ${escHTML(s.phone||"")}</span>
+          <span><strong>Hours:</strong> ${escHTML(s.hours||"")}</span>
+        </div>
+        <div class="rg-3col-tight" style="--gap:10px">
+          <div class="stat-card green" style="padding:14px"><div class="label">Products</div><div class="value" style="font-size:1.5rem">${products.length}</div></div>
+          <div class="stat-card orange" style="padding:14px"><div class="label">Orders</div><div class="value" style="font-size:1.5rem">${orders.length}</div></div>
+          <div class="stat-card blue" style="padding:14px"><div class="label">Revenue</div><div class="value" style="font-size:1.2rem">${fmtBDT(revenue)}</div></div>
+        </div>
+        <h4 class="font-serif" style="font-size:1.05rem;margin:18px 0 10px">Products (${products.length})</h4>
+        <div class="table-wrap" style="max-height:240px;overflow-y:auto"><table class="table"><thead><tr><th></th><th>Name</th><th>Price</th><th>Stock</th></tr></thead><tbody>
+          ${products.slice(0,12).map(p => `<tr><td><img src="${escHTML(p.image)}" class="thumb" style="width:32px;height:32px"></td><td>${escHTML(p.name)}</td><td>${fmtBDT(priceAfter(p.price,p.discount))}</td><td>${p.stock} ${escHTML(p.unit)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted text-center">No products</td></tr>`}
+        </tbody></table></div>
+        <h4 class="font-serif" style="font-size:1.05rem;margin:18px 0 10px">Recent orders</h4>
+        ${orders.slice(0,5).map(o => `<div style="padding:8px 12px;border-bottom:1px solid var(--border-2);font-size:.85rem;display:flex;justify-content:space-between"><span><strong>${escHTML(o.id)}</strong> · ${fmtDate(o.date)}</span><span class="font-serif txt-green" style="font-weight:700">${fmtBDT(o.total)}</span></div>`).join("") || `<p class="muted">No orders yet.</p>`}
+      </div>
+      <div class="modal-foot"><button class="btn btn-secondary" data-close>Close</button></div>`;
+    openModal(html, { size: "lg" });
+  };
+
+  window.onSuspend = id => {
+    const s = DATA_STORES.find(x => x.id === id); if (!s) return;
+    confirmDialog(`Suspend "${s.name}"? Customers won't be able to order from this shop until it's reactivated.`, () => {
+      s.status = "suspended";
+      if (window.DB?.isSupabase && window.DB?.write?.updateStore) {
+        window.DB.write.updateStore(id, { status: "suspended" }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+      }
+      appendAuditLog({ action: "SUSPEND", entity: "shops", entity_id: id, description: `Suspended shop: ${s.name}` });
+      toast(`${s.name} suspended`);
+      render();
+    }, { danger: true, confirm: "Yes, suspend" });
+  };
+  window.onUnsuspend = id => {
+    const s = DATA_STORES.find(x => x.id === id); if (!s) return;
+    s.status = "active";
+    if (window.DB?.isSupabase && window.DB?.write?.updateStore) {
+      window.DB.write.updateStore(id, { status: "active" }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({ action: "UPDATE", entity: "shops", entity_id: id, description: `Unsuspended shop: ${s.name}` });
+    toast(`${s.name} reactivated`);
+    render();
+  };
+
+  $("#exportCsv").addEventListener("click", () => {
+    const shops = getShops();
+    const headers = ["ID","Name","Status","Categories","Area","Upazila","Owner","Phone","Rating","Reviews","Registered"];
+    const rows = shops.map(s => {
+      const owner = DATA_USERS.find(u => u.id === s.owner_id);
+      const cats = (s.category_ids||[]).map(cid => DATA_CATEGORIES.find(c=>c.id===cid)?.name).filter(Boolean).join(" | ");
+      return [s.id, s.name, s.status||"active", cats, s.area, s.upazila, owner?.name||"", s.phone||"", s.rating, s.reviews_count||s.reviews||0, s.created_at||""];
+    });
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `easymart-shops-${todayStr()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${rows.length} shops to CSV`);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Profile</h1>
+      </div>
+    </div>
+
+    <div class="rg-2col">
+      <!-- Personal info -->
+      <div class="dash-section">
+        <h3>Personal information</h3>
+        <div class="avatar-edit">
+          <img id="avatarPreview" alt="Avatar">
+          <div>
+            <strong id="avatarName"></strong>
+            <p class="muted" style="font-size:.85rem">JPG/PNG · max 2MB</p>
+            <label class="btn btn-secondary btn-sm mt-8">Upload new<input type="file" id="avatarFile" accept="image/*" hidden></label>
+          </div>
+        </div>
+        <div class="stack">
+          <div class="field"><label>Full name</label><input class="input" id="pName"></div>
+          <div class="field-row">
+            <div class="field"><label>Phone</label><input class="input" id="pPhone"></div>
+            <div class="field"><label>Email</label><input class="input" id="pEmail" type="email"></div>
+          </div>
+          <button class="btn btn-primary" id="savePersonal">Save changes</button>
+        </div>
+        <hr class="divider">
+        <h4 class="font-serif" style="font-size:1rem;margin-bottom:10px">Change password</h4>
+        <div class="stack">
+          <div class="field"><label>Current password</label><input class="input" id="oldPass" type="password"></div>
+          <div class="field-row">
+            <div class="field"><label>New password</label><input class="input" id="newPass" type="password"></div>
+            <div class="field"><label>Confirm</label><input class="input" id="newPass2" type="password"></div>
+          </div>
+          <button class="btn btn-secondary" id="changePass">Change password</button>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div>
+        <div class="dash-section">
+          <h3>Saved addresses <button class="btn btn-secondary btn-sm" id="addAddr">+ Add new</button></h3>
+          <div id="addrList"></div>
+        </div>
+        <div class="dash-section">
+          <h3>Notifications</h3>
+          <div class="stack">
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifOrders"> <span><strong>Order updates</strong><br><span class="muted" style="font-size:.82rem">Status changes, delivery alerts</span></span></label>
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifPromo"> <span><strong>Promotions &amp; deals</strong><br><span class="muted" style="font-size:.82rem">New coupons, flash sales</span></span></label>
+            <label class="row gap-12" style="padding:10px;border-radius:10px;background:var(--surface-2)"><input type="checkbox" id="notifNearby"> <span><strong>New stores nearby</strong><br><span class="muted" style="font-size:.82rem">Get notified when new shops open in your area</span></span></label>
+          </div>
+        </div>
+        <div class="dash-section">
+          <h3>Account</h3>
+          <p class="muted" style="font-size:.88rem"><strong>Member since</strong> <span id="memberSince">—</span></p>
+          <p class="muted" style="font-size:.88rem"><strong>Account ID</strong> <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:.78rem" id="accountId">—</code></p>
+          <hr class="divider">
+          <button class="btn btn-danger" id="deleteAcc">Delete my account</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["customer"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("profile"); attachSidebarEvents();
+
+  // Initialize
+  $("#avatarPreview").src = u.avatar;
+  $("#avatarPreview").onerror = () => $("#avatarPreview").src = "https://i.pravatar.cc/200?img=1";
+  $("#avatarName").textContent = u.name;
+  $("#pName").value = u.name;
+  $("#pPhone").value = u.phone || "";
+  $("#pEmail").value = u.email;
+  $("#memberSince").textContent = fmtDate(u.created_at);
+  $("#accountId").textContent = u.id;
+  const notif = u.notifications || { orders: true, promotions: true, nearby: false };
+  $("#notifOrders").checked = !!notif.orders;
+  $("#notifPromo").checked  = !!notif.promotions;
+  $("#notifNearby").checked = !!notif.nearby;
+
+  // Avatar upload
+  $("#avatarFile").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 2 * 1024 * 1024) { toast("Image must be under 2MB", "error"); return; }
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { toast("JPG, PNG, or WEBP only", "error"); return; }
+    const r = new FileReader();
+    r.onload = () => {
+      $("#avatarPreview").src = r.result;
+      updateCurrentUser({ avatar: r.result });
+      appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Updated profile photo" });
+      toast("Avatar updated");
+    };
+    r.readAsDataURL(f);
+  });
+
+  // Save personal
+  $("#savePersonal").addEventListener("click", () => {
+    const name  = $("#pName").value.trim();
+    const phone = $("#pPhone").value.trim();
+    const email = $("#pEmail").value.trim();
+    if (!name)  { toast("Name is required", "error"); return; }
+    if (!/^\S+@\S+\.\S+$/.test(email)) { toast("Invalid email", "error"); return; }
+    updateCurrentUser({ name, phone, email });
+    appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Updated personal information" });
+    toast("Profile saved");
+    $("#avatarName").textContent = name;
+  });
+
+  // Change password
+  $("#changePass").addEventListener("click", async () => {
+    const old = $("#oldPass").value;
+    const np  = $("#newPass").value;
+    const np2 = $("#newPass2").value;
+    if (!old) { toast("Enter your current password", "error"); return; }
+    if (np.length < 6) { toast("New password must be at least 6 characters", "error"); return; }
+    if (np !== np2) { toast("Passwords don't match", "error"); return; }
+
+    // Supabase mode — verify current password against DB, then update
+    if (window.DB?.isSupabase && window.DB?.write?.signIn) {
+      try {
+        await window.DB.write.signIn(u.email, old);     // throws if old password wrong
+      } catch (err) {
+        toast("Current password is incorrect", "error");
+        return;
+      }
+      try {
+        await window.DB.write.updateUser(u.id, { password: np });
+      } catch (err) {
+        toast("Failed to change password: " + err.message, "error");
+        return;
+      }
+      appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Changed password" });
+      toast("Password changed");
+      $("#oldPass").value = $("#newPass").value = $("#newPass2").value = "";
+      return;
+    }
+
+    // Demo mode — update in DATA_USERS in memory
+    const me = DATA_USERS.find(x => x.id === u.id);
+    if (me) {
+      if (me.password && me.password !== old) { toast("Current password is incorrect", "error"); return; }
+      me.password = np;
+    }
+    appendAuditLog({ action: "UPDATE", entity: "users", entity_id: u.id, description: "Changed password" });
+    toast("Password changed");
+    $("#oldPass").value = $("#newPass").value = $("#newPass2").value = "";
+  });
+
+  // Notification toggles — persist on change
+  ["notifOrders", "notifPromo", "notifNearby"].forEach(id => {
+    $("#" + id).addEventListener("change", () => {
+      updateCurrentUser({ notifications: { orders: $("#notifOrders").checked, promotions: $("#notifPromo").checked, nearby: $("#notifNearby").checked } });
+      toast("Notification preferences saved");
+    });
+  });
+
+  // Addresses
+  function renderAddresses() {
+    const cu = getCurrentUser();
+    const addrs = cu.addresses || [];
+    $("#addrList").innerHTML = addrs.length ? addrs.map(a => `
+      <div class="address-card ${a.is_default || a.default ? "default" : ""}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="min-width:0">
+            <span class="lbl">${escHTML(a.label)}</span>
+            <p style="font-weight:600">${escHTML(a.area)}, ${escHTML(a.upazila)}</p>
+            <p class="muted" style="font-size:.85rem">${escHTML(a.street || "")}, ${escHTML(a.district)}, ${escHTML(a.division)}</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            ${(a.is_default || a.default) ? "" : `<button class="btn btn-ghost btn-sm" onclick="setDefault(${a.id})">Set default</button>`}
+            <button class="btn btn-ghost btn-sm txt-red" onclick="delAddr(${a.id})">Delete</button>
+          </div>
+        </div>
+      </div>`).join("") : `<p class="muted">No saved addresses yet.</p>`;
+  }
+  renderAddresses();
+
+  $("#addAddr").addEventListener("click", () => {
+    const html = `
+    <div class="modal-head"><h3>Add new address</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <div class="stack">
+        <div class="field"><label>Label</label><select class="select" id="aLabel"><option>Home</option><option>Office</option><option>Other</option></select></div>
+        ${["division","district","upazila","area"].map(f=>`<div class="field autocomplete"><label>${f.charAt(0).toUpperCase()+f.slice(1)}</label><input class="input js-loc-input" data-f="${f}" autocomplete="off"><div class="ac-list" data-for="${f}" hidden></div></div>`).join("")}
+        <div class="field"><label>Street / House</label><input class="input" id="aStreet" placeholder="Road, house, apt"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary" data-close>Cancel</button><button class="btn btn-primary" id="saveAddr">Save</button></div>`;
+    const { host, close } = openModal(html);
+    $$(".js-loc-input", host).forEach(inp => {
+      const list = $(`.ac-list[data-for="${inp.dataset.f}"]`, host);
+      const r = () => { const ss = locSuggestions(inp.dataset.f, inp.value); list.innerHTML = ss.map(s => `<div class="ac-item">${escHTML(s)}</div>`).join(""); list.hidden = !ss.length; };
+      inp.addEventListener("focus", r); inp.addEventListener("input", r);
+      inp.addEventListener("blur", () => setTimeout(() => list.hidden = true, 150));
+      list.addEventListener("mousedown", e => { const i = e.target.closest(".ac-item"); if (!i) return; inp.value = i.textContent; list.hidden = true; });
+    });
+    $("#saveAddr", host).addEventListener("click", () => {
+      const cu = getCurrentUser();
+      const next = { id: Date.now(), label: $("#aLabel", host).value };
+      $$(".js-loc-input", host).forEach(i => next[i.dataset.f] = i.value.trim());
+      next.street = $("#aStreet", host).value.trim();
+      if (!next.upazila || !next.area) { toast("Fill upazila and area", "error"); return; }
+      const addrs = cu.addresses || [];
+      if (!addrs.length) next.is_default = true;
+      addrs.push(next);
+      updateCurrentUser({ addresses: addrs });
+      appendAuditLog({ action: "CREATE", entity: "users", entity_id: cu.id, description: `Added ${next.label} address` });
+      close(); renderAddresses(); toast("Address added");
+    });
+  });
+
+  window.setDefault = (id) => {
+    const cu = getCurrentUser();
+    const addrs = (cu.addresses || []).map(a => ({ ...a, is_default: a.id === id, default: a.id === id }));
+    updateCurrentUser({ addresses: addrs });
+    renderAddresses(); toast("Default address updated");
+  };
+  window.delAddr = (id) => confirmDialog("Delete this address?", () => {
+    const cu = getCurrentUser();
+    let addrs = (cu.addresses || []).filter(a => a.id !== id);
+    if (addrs.length && !addrs.some(a => a.is_default || a.default)) addrs[0].is_default = true;
+    updateCurrentUser({ addresses: addrs });
+    appendAuditLog({ action: "DELETE", entity: "users", entity_id: cu.id, description: "Removed address" });
+    renderAddresses(); toast("Address deleted");
+  }, { danger: true, confirm: "Delete" });
+
+  // Delete account
+  $("#deleteAcc").addEventListener("click", () => {
+    const html = `
+    <div class="modal-head"><h3>Delete account</h3><button class="modal-close" data-close>×</button></div>
+    <div class="modal-body">
+      <p>This permanently deletes your account, orders, favorites, and coins. To confirm, type <code>DELETE</code> below.</p>
+      <div class="field mt-16"><input class="input" id="delConfirm" placeholder="Type DELETE"></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary" data-close>Cancel</button><button class="btn btn-danger" id="confirmDel">Delete forever</button></div>`;
+    const { host, close } = openModal(html);
+    $("#confirmDel", host).addEventListener("click", () => {
+      if ($("#delConfirm", host).value.trim() !== "DELETE") { toast("Please type DELETE to confirm", "error"); return; }
+      appendAuditLog({ action: "DELETE", entity: "users", entity_id: u.id, description: "Account deletion requested" });
+      localStorage.removeItem("em_user");
+      localStorage.removeItem("em_cart");
+      localStorage.removeItem("em_favorites");
+      close();
+      toast("Account deleted. Goodbye 👋");
+      setTimeout(() => location.href = "../../index.html", 800);
+    });
+  });
+})();
+</script>
+</body>
+</html>

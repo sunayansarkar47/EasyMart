@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cart — EasyMart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Your cart</h1>
+      </div>
+      <button class="loc-chip js-loc" type="button">
+        <span class="pin">📍</span><strong id="locArea">—</strong>
+      </button>
+    </div>
+
+    <div id="cartContent"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["customer"]);
+  if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("cart");
+  attachSidebarEvents();
+  $("#locArea").textContent = locGet().area || "—";
+
+  // Handle ?add=ID URL param
+  const params = new URLSearchParams(location.search);
+  const addId = params.get("add") ? Number(params.get("add")) : null;
+  if (addId) {
+    cartAdd(addId);
+    history.replaceState({}, "", location.pathname);
+  }
+
+  // State
+  const STATE = {
+    coupon: null, // { code, percent }
+    coinsToRedeem: 0,
+    deliveryByStore: {} // store_id -> "Home Delivery" | "Store Pickup"
+  };
+
+  function render() {
+    const cart = cartGet();
+    if (!cart.length) {
+      $("#cartContent").innerHTML = `
+        <div class="empty card" style="padding:80px 24px">
+          <div class="ic">🛒</div>
+          <h3 class="font-serif">Your cart is empty</h3>
+          <p class="muted">Add items from the homepage or your favorites to get started.</p>
+          <a href="../../index.html" class="btn btn-primary mt-16">Browse products</a>
+        </div>`;
+      return;
+    }
+    // Group by store
+    const byStore = {};
+    cart.forEach(it => {
+      const key = it.store_id;
+      if (!byStore[key]) byStore[key] = [];
+      byStore[key].push(it);
+    });
+
+    let subtotal = 0;
+    let deliveryFees = 0;
+    const groupHTML = Object.keys(byStore).map(sid => {
+      const store = DATA_STORES.find(s => s.id === Number(sid));
+      const items = byStore[sid];
+      const dt = STATE.deliveryByStore[sid] || "Home Delivery";
+      if (dt === "Home Delivery") deliveryFees += 60;
+      const itemsHTML = items.map(it => {
+        const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+        if (!p) return "";
+        const after = priceAfter(p.price, p.discount);
+        subtotal += after * it.qty;
+        return `<div class="cart-item">
+          <img src="${escHTML(p.image)}" alt="${escHTML(p.name)}" onerror="this.src='https://images.unsplash.com/photo-1542838132-92c53300491e?w=200'">
+          <div style="flex:1;min-width:0">
+            <div class="cart-item-name">${escHTML(p.name)}</div>
+            <div class="muted" style="font-size:.78rem;margin-top:2px">${fmtBDT(after)} / ${escHTML(p.unit)}${p.discount?` <span class="discount-badge" style="margin-left:6px">−${p.discount}%</span>`:""}</div>
+            <div class="muted" style="font-size:.74rem">In stock: ${p.stock} ${escHTML(p.unit)}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+            <div class="qty-control">
+              <button onclick="onQty(${p.id},-1)" aria-label="Decrease">−</button>
+              <span class="qty">${it.qty}</span>
+              <button onclick="onQty(${p.id},1)" aria-label="Increase" ${it.qty >= p.stock ? "disabled" : ""}>+</button>
+            </div>
+            <div class="cart-item-price">${fmtBDT(after * it.qty)}</div>
+            <button class="btn btn-ghost btn-sm" onclick="onRemove(${p.id})">Remove</button>
+          </div>
+        </div>`;
+      }).join("");
+      return `<div class="cart-group">
+        <div class="cart-group-head">
+          <strong>🏪 ${escHTML(store?.name || "Store")}</strong>
+          <span class="muted" style="font-size:.82rem">${items.length} item${items.length>1?"s":""}</span>
+        </div>
+        ${itemsHTML}
+        <div class="delivery-toggle">
+          <span style="font-weight:600;font-size:.85rem">Delivery:</span>
+          <label><input type="radio" name="delivery_${sid}" value="Home Delivery" ${dt==="Home Delivery"?"checked":""} onchange="onDelivery(${sid},'Home Delivery')"> Home delivery (৳60)</label>
+          <label><input type="radio" name="delivery_${sid}" value="Store Pickup"  ${dt==="Store Pickup"?"checked":""}  onchange="onDelivery(${sid},'Store Pickup')"> Store pickup (free)</label>
+        </div>
+      </div>`;
+    }).join("");
+
+    const couponDiscount = STATE.coupon ? Math.round(subtotal * STATE.coupon.percent / 100) : 0;
+    const coinsDiscount  = Math.round(STATE.coinsToRedeem / 10);
+    const total          = Math.max(0, subtotal + deliveryFees - couponDiscount - coinsDiscount);
+
+    $("#cartContent").innerHTML = `
+      <div class="cart-grid">
+        <div>${groupHTML}</div>
+        <aside class="cart-summary">
+          <h3>Order summary</h3>
+          <div class="summary-row"><span>Subtotal</span><span>${fmtBDT(subtotal)}</span></div>
+          <div class="summary-row"><span>Delivery fees</span><span>${fmtBDT(deliveryFees)}</span></div>
+          ${STATE.coupon ? `<div class="summary-row" style="color:var(--green-600)"><span>Coupon (${STATE.coupon.code})</span><span>−${fmtBDT(couponDiscount)}</span></div>` : ""}
+          ${STATE.coinsToRedeem ? `<div class="summary-row" style="color:var(--green-600)"><span>Coins (${STATE.coinsToRedeem})</span><span>−${fmtBDT(coinsDiscount)}</span></div>` : ""}
+          <div class="summary-row total"><span>Total</span><span>${fmtBDT(total)}</span></div>
+
+          <div class="field mt-16">
+            <label>Coupon code</label>
+            <div style="display:flex;gap:8px"><input class="input" id="coupon" placeholder="Try SAVE10"><button class="btn btn-secondary btn-sm" onclick="onCoupon()">Apply</button></div>
+            ${STATE.coupon ? `<span class="hint" style="color:var(--green-600)">${STATE.coupon.code} applied — ${STATE.coupon.percent}% off</span>` : `<span class="hint">Demo: <code>SAVE10</code> for 10% off</span>`}
+          </div>
+
+          <div class="field mt-16">
+            <label>Redeem coins (you have ${u.coins || 0})</label>
+            <div style="display:flex;gap:8px"><input class="input" id="redeem" type="number" min="0" max="${u.coins || 0}" step="100" value="${STATE.coinsToRedeem || 0}"><button class="btn btn-secondary btn-sm" onclick="onRedeem()">Apply</button></div>
+            <span class="hint">100 coins = ৳10 off</span>
+          </div>
+
+          <button class="btn btn-primary btn-block btn-lg mt-16" onclick="onCheckout()">Proceed to checkout</button>
+          <button class="btn btn-ghost btn-block mt-8" onclick="onClear()">Clear cart</button>
+        </aside>
+      </div>`;
+  }
+
+  // Handlers
+  window.onQty = (pid, delta) => {
+    const cart = cartGet();
+    const it = cart.find(i => i.product_id === pid); if (!it) return;
+    cartUpdate(pid, it.qty + delta);
+    if (it.qty + delta <= 0) cartRemove(pid);
+    render();
+  };
+  window.onRemove = pid => {
+    cartRemove(pid);
+    toast("Item removed");
+    render();
+  };
+  window.onDelivery = (sid, type) => {
+    STATE.deliveryByStore[sid] = type;
+    render();
+  };
+  window.onCoupon = () => {
+    const v = $("#coupon").value.trim().toUpperCase();
+    if (v === "SAVE10") { STATE.coupon = { code: "SAVE10", percent: 10 }; toast("Coupon applied: 10% off"); }
+    else { toast("Invalid coupon", "error"); STATE.coupon = null; }
+    render();
+  };
+  window.onRedeem = () => {
+    const v = Math.min(parseInt($("#redeem").value) || 0, u.coins || 0);
+    STATE.coinsToRedeem = Math.floor(v / 100) * 100;
+    toast(STATE.coinsToRedeem ? `Will redeem ${STATE.coinsToRedeem} coins` : "Coins must be in increments of 100", STATE.coinsToRedeem ? "success" : "warn");
+    render();
+  };
+  window.onClear = () => confirmDialog("Empty your cart?", () => { cartClear(); render(); toast("Cart cleared"); });
+  window.onCheckout = () => {
+    const cart = cartGet();
+    if (!cart.length) return;
+    // Group items by store and create one order per store
+    const byStore = {};
+    cart.forEach(it => { (byStore[it.store_id] = byStore[it.store_id] || []).push(it); });
+    const orders = DS.orders().slice();
+    let totalAll = 0;
+    const ordersToInsert = [];
+    Object.keys(byStore).forEach(sid => {
+      const items = byStore[sid];
+      const dt = STATE.deliveryByStore[sid] || "Home Delivery";
+      const sub = items.reduce((s, it) => {
+        const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+        return s + priceAfter(p.price, p.discount) * it.qty;
+      }, 0);
+      const fee = dt === "Home Delivery" ? 60 : 0;
+      const total = sub + fee;
+      totalAll += total;
+      const newOrder = {
+        id: Math.max(5000, ...orders.map(o => Number(o.id) || 0)) + 1 + ordersToInsert.length,
+        customer_id: u.id, store_id: Number(sid),
+        status: "pending",
+        items: items.map(it => {
+          const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+          return { product_id: it.product_id, name: p?.name || "", qty: it.qty, price: p.price, discount: p.discount };
+        }),
+        subtotal: sub, delivery_fee: fee, coupon: 0, coins_redeemed: 0,
+        total, delivery_type: dt, date: new Date().toISOString()
+      };
+      orders.unshift(newOrder);
+      ordersToInsert.push(newOrder);
+      appendAuditLog({ action: "CREATE", entity: "orders", entity_id: newOrder.id, description: `Placed order at ${DATA_STORES.find(s => s.id === Number(sid))?.name} for ${fmtBDT(total)}` });
+    });
+    writeStore("em_orders", orders);
+
+    // Supabase write-through
+    if (window.DB?.isSupabase && window.DB?.write?.insertOrder) {
+      ordersToInsert.forEach(o => {
+        const dbOrder = { ...o }; delete dbOrder.id;
+        window.DB.write.insertOrder(dbOrder).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+      });
+    }
+
+    // Coins: earn 1 per ৳10, redeem if requested
+    const earn = Math.floor(totalAll / 10);
+    if (STATE.coinsToRedeem) coinsAppend(u.id, -STATE.coinsToRedeem, "Redeemed " + STATE.coinsToRedeem + " coins");
+    if (earn) coinsAppend(u.id, earn, "Order placed");
+
+    cartClear();
+    toast(`Order placed! +${earn} coins earned`, "success", "Thanks for your order");
+    setTimeout(() => location.href = "orders.html", 900);
+  };
+
+  render();
+})();
+</script>
+
+<style>
+  .cart-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+  @media (max-width: 1024px) { .cart-grid { grid-template-columns: 1fr; } }
+  .cart-group { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-md); margin-bottom: 16px; overflow: hidden; }
+  .cart-group-head { padding: 14px 18px; background: var(--surface-2); border-bottom: 1px solid var(--border-2); display: flex; justify-content: space-between; align-items: center; }
+  .cart-item { display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid var(--border-2); align-items: center; }
+  .cart-item:last-of-type { border-bottom: 0; }
+</style>
+</body>
+</html>

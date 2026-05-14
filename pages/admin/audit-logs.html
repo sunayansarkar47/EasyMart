@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audit Logs — EasyMart Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Audit logs</h1>
+      </div>
+      <button class="btn btn-secondary" id="exportCsv">⬇ Export CSV</button>
+    </div>
+
+    <p class="muted" style="font-size:.88rem;margin-bottom:14px">Audit entries are immutable. They cannot be edited or deleted from this page.</p>
+
+    <div class="filter-bar">
+      <select class="select" id="userType" style="max-width:180px">
+        <option value="">All user types</option>
+        <option value="customer">Customer</option>
+        <option value="shopkeeper">Shopkeeper</option>
+        <option value="admin">Admin</option>
+        <option value="system">System</option>
+      </select>
+      <select class="select" id="actionType" style="max-width:180px">
+        <option value="">All actions</option>
+        <option value="CREATE">CREATE</option>
+        <option value="UPDATE">UPDATE</option>
+        <option value="DELETE">DELETE</option>
+        <option value="LOGIN">LOGIN</option>
+        <option value="LOGOUT">LOGOUT</option>
+        <option value="SUSPEND">SUSPEND</option>
+        <option value="APPROVE">APPROVE</option>
+      </select>
+      <select class="select" id="entityType" style="max-width:180px">
+        <option value="">All entities</option>
+        <option value="users">Users</option>
+        <option value="orders">Orders</option>
+        <option value="products">Products</option>
+        <option value="shops">Shops</option>
+        <option value="ads">Ads</option>
+        <option value="reviews">Reviews</option>
+        <option value="coins">Coins</option>
+        <option value="favorites">Favorites</option>
+      </select>
+      <input class="input" id="dateFrom" type="date" style="max-width:180px">
+      <input class="input" id="dateTo"   type="date" style="max-width:180px">
+      <div class="field has-icon" style="flex:1;min-width:240px">
+        <span class="leading">🔍</span>
+        <input id="search" class="input" placeholder="Search by user or description…">
+      </div>
+    </div>
+
+    <div id="logTable"></div>
+    <div id="pagination" style="display:flex;justify-content:center;gap:6px;margin-top:18px"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["admin"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("audit-logs"); attachSidebarEvents();
+
+  const STATE = { userType: "", actionType: "", entityType: "", dateFrom: "", dateTo: "", q: "", page: 1 };
+  const PER_PAGE = 50;
+  const ACTION_BADGE = { CREATE: "badge-green", UPDATE: "badge-blue", DELETE: "badge-red", LOGIN: "badge-gray", LOGOUT: "badge-gray", SUSPEND: "badge-orange", RESUME: "badge-teal", APPROVE: "badge-teal" };
+
+  function getLogs() {
+    let logs = DS.audit().slice();
+    if (STATE.userType) logs = logs.filter(l => (l.user_type||"") === STATE.userType);
+    if (STATE.actionType) logs = logs.filter(l => l.action === STATE.actionType);
+    if (STATE.entityType) logs = logs.filter(l => l.entity === STATE.entityType);
+    if (STATE.dateFrom) logs = logs.filter(l => new Date(l.datetime) >= new Date(STATE.dateFrom));
+    if (STATE.dateTo)   logs = logs.filter(l => new Date(l.datetime) <= new Date(STATE.dateTo + "T23:59:59"));
+    if (STATE.q) {
+      const q = STATE.q.toLowerCase();
+      logs = logs.filter(l => (l.user_name||"").toLowerCase().includes(q) || (l.description||"").toLowerCase().includes(q));
+    }
+    return logs;
+  }
+
+  function render() {
+    const logs = getLogs();
+    const total = logs.length;
+    const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+    if (STATE.page > totalPages) STATE.page = totalPages;
+    const start = (STATE.page - 1) * PER_PAGE;
+    const slice = logs.slice(start, start + PER_PAGE);
+
+    if (!total) {
+      $("#logTable").innerHTML = `<div class="empty card" style="padding:60px"><div class="ic">📋</div><h3 class="font-serif">No log entries match</h3><p class="muted">Try clearing some filters.</p></div>`;
+      $("#pagination").innerHTML = "";
+      return;
+    }
+
+    $("#logTable").innerHTML = `<div class="table-wrap"><table class="table">
+      <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Entity</th><th>Description</th></tr></thead>
+      <tbody>${slice.map(l => `<tr>
+        <td><span class="muted" style="font-size:.78rem;font-family:monospace">${fmtDateTime(l.datetime)}</span></td>
+        <td><strong>${escHTML(l.user_name)}</strong><br><span class="muted" style="font-size:.72rem">${escHTML(l.user_type)}</span></td>
+        <td><span class="badge ${ACTION_BADGE[l.action] || "badge-gray"}">${escHTML(l.action)}</span></td>
+        <td><code style="background:var(--surface-2);padding:2px 8px;border-radius:4px;font-size:.78rem">${escHTML(l.entity)}#${escHTML(String(l.entity_id))}</code></td>
+        <td>${escHTML(l.description)}</td>
+      </tr>`).join("")}</tbody></table></div>`;
+
+    // Pagination
+    let pages = `<button class="btn btn-secondary btn-sm" ${STATE.page === 1 ? "disabled" : ""} onclick="onPage(${STATE.page-1})">← Prev</button>`;
+    const visible = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= STATE.page - 1 && i <= STATE.page + 1)) visible.push(i);
+    }
+    visible.forEach((p, i) => {
+      if (i > 0 && p > visible[i-1] + 1) pages += `<span style="padding:0 6px;align-self:center">…</span>`;
+      pages += `<button class="btn btn-${p===STATE.page?"primary":"secondary"} btn-sm" onclick="onPage(${p})">${p}</button>`;
+    });
+    pages += `<button class="btn btn-secondary btn-sm" ${STATE.page === totalPages ? "disabled" : ""} onclick="onPage(${STATE.page+1})">Next →</button>`;
+    pages += `<span class="muted" style="font-size:.82rem;margin-left:auto;align-self:center">Showing ${start+1}–${Math.min(start+PER_PAGE, total)} of ${total}</span>`;
+    $("#pagination").innerHTML = pages;
+    $("#pagination").style.flexWrap = "wrap";
+  }
+
+  // Filter wiring
+  $("#userType").addEventListener("change", e => { STATE.userType = e.target.value; STATE.page = 1; render(); });
+  $("#actionType").addEventListener("change", e => { STATE.actionType = e.target.value; STATE.page = 1; render(); });
+  $("#entityType").addEventListener("change", e => { STATE.entityType = e.target.value; STATE.page = 1; render(); });
+  $("#dateFrom").addEventListener("change", e => { STATE.dateFrom = e.target.value; STATE.page = 1; render(); });
+  $("#dateTo").addEventListener("change", e => { STATE.dateTo = e.target.value; STATE.page = 1; render(); });
+  $("#search").addEventListener("input", e => { STATE.q = e.target.value; STATE.page = 1; render(); });
+  window.onPage = p => { STATE.page = p; render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+
+  // Export
+  $("#exportCsv").addEventListener("click", () => {
+    const logs = getLogs();
+    const headers = ["ID","Timestamp","User","UserType","Action","Entity","EntityID","Description"];
+    const rows = logs.map(l => [l.id, l.datetime, l.user_name, l.user_type, l.action, l.entity, l.entity_id, l.description]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `easymart-audit-${todayStr()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${rows.length} log entries`);
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Deliveries — EasyMart Shopkeeper</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body data-depth="2">
+<div class="dash-shell">
+  <div id="sidebarHost"></div>
+  <main class="dash-main">
+    <div class="dash-topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle js-menu-toggle">☰</button>
+        <h1 class="display">Deliveries</h1>
+      </div>
+      <div class="row gap-12" id="quickStats" style="font-size:.85rem"></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="tabs" id="statusTabs">
+        <button class="active" data-s="active">Active <span class="muted" id="cActive"></span></button>
+        <button data-s="pending">Pending <span class="muted" id="cPending"></span></button>
+        <button data-s="confirmed">Confirmed <span class="muted" id="cConfirmed"></span></button>
+        <button data-s="preparing">Preparing <span class="muted" id="cPreparing"></span></button>
+        <button data-s="shipped">Shipped <span class="muted" id="cShipped"></span></button>
+        <button data-s="delivered">Delivered <span class="muted" id="cDelivered"></span></button>
+        <button data-s="cancelled">Cancelled <span class="muted" id="cCancelled"></span></button>
+        <button data-s="all">All</button>
+      </div>
+      <select class="select" id="storeFilter" style="max-width:220px">
+        <option value="">All my shops</option>
+      </select>
+      <div class="field has-icon" style="flex:1;min-width:240px">
+        <span class="leading">🔍</span>
+        <input id="search" class="input" placeholder="Search by order ID or customer name…">
+      </div>
+    </div>
+
+    <div id="orderList"></div>
+  </main>
+</div>
+
+<script src="../../config.js"></script>
+<script src="../../js/data.js"></script>
+<script src="../../lib/supabase.js"></script>
+<script src="../../js/db.js"></script>
+<script src="../../js/app.js"></script>
+<script>
+(function(){
+  const u = requireAuth(["shopkeeper"]); if (!u) return;
+  $("#sidebarHost").innerHTML = renderSidebar("deliveries"); attachSidebarEvents();
+
+  const myStoreIds = u.store_ids || (u.store_id ? [u.store_id] : []);
+  const myStores = DATA_STORES.filter(s => myStoreIds.includes(s.id));
+  $("#storeFilter").innerHTML += myStores.map(s => `<option value="${s.id}">${escHTML(s.name)}</option>`).join("");
+
+  const STATE = { status: "active", store: "", q: "" };
+  const FLOW = ["pending", "confirmed", "preparing", "shipped", "delivered"];
+  const ACTIVE_STATUSES = ["pending", "confirmed", "preparing", "shipped"];
+  const STATUS_BADGE = { pending: "badge-orange", confirmed: "badge-blue", preparing: "badge-amber", shipped: "badge-blue", delivered: "badge-green", cancelled: "badge-red" };
+  const STATUS_NEXT_LABEL = { pending: "Confirm order", confirmed: "Start preparing", preparing: "Mark as shipped", shipped: "Mark as delivered" };
+
+  function getOrders() {
+    let orders = DS.orders().filter(o => myStoreIds.includes(o.store_id));
+    if (STATE.store) orders = orders.filter(o => o.store_id === Number(STATE.store));
+    if (STATE.status === "active") {
+      orders = orders.filter(o => ACTIVE_STATUSES.includes(String(o.status).toLowerCase()));
+    } else if (STATE.status !== "all") {
+      orders = orders.filter(o => String(o.status).toLowerCase() === STATE.status);
+    }
+    if (STATE.q) {
+      const q = STATE.q.toLowerCase();
+      orders = orders.filter(o => {
+        if (String(o.id).toLowerCase().includes(q)) return true;
+        const customer = DATA_USERS.find(x => x.id === o.customer_id);
+        if (customer && customer.name.toLowerCase().includes(q)) return true;
+        return false;
+      });
+    }
+    return orders.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
+  function refreshCounts() {
+    const all = DS.orders().filter(o => myStoreIds.includes(o.store_id));
+    const c = (s) => all.filter(o => String(o.status).toLowerCase() === s).length;
+    $("#cActive").textContent     = `(${all.filter(o => ACTIVE_STATUSES.includes(String(o.status).toLowerCase())).length})`;
+    $("#cPending").textContent    = `(${c("pending")})`;
+    $("#cConfirmed").textContent  = `(${c("confirmed")})`;
+    $("#cPreparing").textContent  = `(${c("preparing")})`;
+    $("#cShipped").textContent    = `(${c("shipped")})`;
+    $("#cDelivered").textContent  = `(${c("delivered")})`;
+    $("#cCancelled").textContent  = `(${c("cancelled")})`;
+
+    const todayOrders = all.filter(o => String(o.date).slice(0, 10) === todayStr()).length;
+    const todayRevenue = all.filter(o => String(o.date).slice(0, 10) === todayStr() && String(o.status).toLowerCase() === "delivered")
+      .reduce((s, o) => s + (o.total || 0), 0);
+    $("#quickStats").innerHTML = `
+      <span><strong>${todayOrders}</strong> orders today</span>
+      <span class="muted">·</span>
+      <span><strong class="txt-green font-serif">${fmtBDT(todayRevenue)}</strong> earned today</span>`;
+  }
+
+  function render() {
+    refreshCounts();
+    const orders = getOrders();
+    if (!orders.length) {
+      $("#orderList").innerHTML = `<div class="empty card" style="padding:60px 24px">
+        <div class="ic">🚚</div><h3 class="font-serif">No orders to show</h3>
+        <p class="muted">When customers place orders at your shop, they'll show up here.</p></div>`;
+      return;
+    }
+    $("#orderList").innerHTML = orders.map(o => {
+      const store = DATA_STORES.find(s => s.id === o.store_id);
+      const customer = DATA_USERS.find(x => x.id === o.customer_id);
+      const status = String(o.status).toLowerCase();
+      const stepIdx = FLOW.indexOf(status);
+      const cancelled = status === "cancelled";
+      const itemsHTML = (o.items || []).map(it => {
+        const p = DATA_PRODUCTS.find(x => x.id === it.product_id);
+        const after = priceAfter(it.price, it.discount || 0);
+        return `<div class="order-item">
+          <span class="nm">${escHTML(it.name || p?.name || "Item")} × ${it.qty}</span>
+          <span>${fmtBDT(after * it.qty)}</span>
+        </div>`;
+      }).join("");
+
+      // Status timeline (skip if cancelled)
+      const timeline = cancelled ? `<div style="margin:10px 0"><span class="badge badge-red">Order cancelled</span></div>` : `<div class="timeline">
+        ${FLOW.map((s, i) => {
+          const cls = i < stepIdx ? "done" : i === stepIdx ? "active" : "";
+          return `<div class="timeline-step ${cls}"><span class="dot"></span><span class="lbl">${s.charAt(0).toUpperCase() + s.slice(1)}</span></div>${i < FLOW.length - 1 ? `<div class="timeline-line ${i < stepIdx ? "done" : ""}"></div>` : ""}`;
+        }).join("")}
+      </div>`;
+
+      // Action buttons
+      const nextLabel = STATUS_NEXT_LABEL[status];
+      const actions = cancelled || status === "delivered" ? "" : `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-2)">
+          ${nextLabel ? `<button class="btn btn-primary btn-sm" onclick="onAdvance('${o.id}')">${nextLabel} →</button>` : ""}
+          <button class="btn btn-danger btn-sm" onclick="onCancel('${o.id}')">Cancel order</button>
+        </div>`;
+
+      // Customer details block
+      const customerBlock = customer ? `
+        <div class="card-pad" style="background:var(--surface-2);padding:12px;border-radius:var(--radius);margin-top:10px;font-size:.85rem">
+          <strong>📞 Customer:</strong> ${escHTML(customer.name)} · ${escHTML(customer.phone || "no phone")}<br>
+          ${customer.area ? `<strong>📍 Address:</strong> ${escHTML(customer.area)}, ${escHTML(customer.upazila || "")}, ${escHTML(customer.district || "")}<br>` : ""}
+          <strong>🚚 Delivery:</strong> ${escHTML(o.delivery_type || "Home Delivery")}
+        </div>` : "";
+
+      return `<div class="order-card fade-up">
+        <div class="order-head">
+          <div class="meta">
+            <strong>${escHTML(o.id)}</strong>
+            <div class="id">${escHTML(store?.name || "Shop")} · ${fmtDateTime(o.date)}</div>
+          </div>
+          <span class="badge ${STATUS_BADGE[status] || "badge-gray"}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+        </div>
+        ${timeline}
+        <div class="order-items">${itemsHTML}</div>
+        ${customerBlock}
+        <div class="order-foot">
+          <div><span class="muted" style="font-size:.85rem">${(o.items||[]).length} item${(o.items||[]).length>1?"s":""}</span></div>
+          <span class="total">${fmtBDT(o.total)}</span>
+        </div>
+        ${actions}
+      </div>`;
+    }).join("");
+  }
+
+  // Filter wiring
+  $$("#statusTabs button").forEach(b => b.addEventListener("click", () => {
+    $$("#statusTabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    STATE.status = b.dataset.s; render();
+  }));
+  $("#storeFilter").addEventListener("change", e => { STATE.store = e.target.value; render(); });
+  $("#search").addEventListener("input", e => { STATE.q = e.target.value; render(); });
+
+  // Advance order to next status
+  window.onAdvance = (oid) => {
+    const orders = DS.orders().slice();
+    const o = orders.find(x => String(x.id) === String(oid));
+    if (!o) return;
+    const status = String(o.status).toLowerCase();
+    const idx = FLOW.indexOf(status);
+    if (idx < 0 || idx >= FLOW.length - 1) {
+      toast("Order is already at its final status", "warn");
+      return;
+    }
+    const nextStatus = FLOW[idx + 1];
+    o.status = nextStatus;
+    writeStore("em_orders", orders);
+    if (window.DB?.isSupabase && window.DB?.write?.updateOrder) {
+      window.DB.write.updateOrder(o.id, { status: nextStatus }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({
+      action: "UPDATE",
+      entity: "orders",
+      entity_id: typeof o.id === "number" ? o.id : null,
+      description: `Order ${o.id}: ${status} → ${nextStatus}`
+    });
+    toast(`Order ${o.id} → ${nextStatus}`);
+    render();
+  };
+
+  window.onCancel = (oid) => confirmDialog("Cancel this order? This can't be undone.", () => {
+    const orders = DS.orders().slice();
+    const o = orders.find(x => String(x.id) === String(oid));
+    if (!o) return;
+    o.status = "cancelled";
+    writeStore("em_orders", orders);
+    if (window.DB?.isSupabase && window.DB?.write?.updateOrder) {
+      window.DB.write.updateOrder(o.id, { status: "cancelled" }).catch(err => toast("Cloud sync failed: " + err.message, "error"));
+    }
+    appendAuditLog({
+      action: "UPDATE",
+      entity: "orders",
+      entity_id: typeof o.id === "number" ? o.id : null,
+      description: `Order ${o.id}: shopkeeper cancelled`
+    });
+    toast(`Order ${o.id} cancelled`);
+    render();
+  }, { danger: true, confirm: "Yes, cancel" });
+
+  render();
+})();
+</script>
+</body>
+</html>
